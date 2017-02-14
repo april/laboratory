@@ -1,0 +1,13 @@
+{
+    "env":{
+        "browser":true
+    },
+    "extends":"airbnb",
+    "globals":{
+        "browser": true,
+        "Laboratory": true
+    },
+    "rules":{
+        "no-param-reassign": 0
+    }
+}

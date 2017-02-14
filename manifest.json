@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "Laboratory by Mozilla",
+  "version": "1.0",
+
+  "description": "Because good website security shouldn't only be available to mad scientists!",
+
+  "background": {
+    "scripts": ["js/laboratory.js"]
+  },
+
+  "permissions": [
+    "storage", "tabs", "webNavigation", "webRequest", "http://*/*", "https://*/*"
+  ]
+}
