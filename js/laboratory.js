@@ -144,11 +144,15 @@ class Lab {
   }
 
   requestMonitor(details) {
-    console.log('this is', this);
-    console.log('details is this', details);
     // ignore main_frame requests, that's just the primary request (not a subresource)
     // also ignore csp_report requests, as they're not sources
     if (['main_frame', 'csp_report'].includes(details.type)) {
+      return;
+    }
+
+    // for requests that have a frameId (eg iframes), we only want to record them if they're a sub_frame
+    // request; all of the frame's resources are sandboxed as far as CSP goes
+    if (details.frameId !== 0 && details.type !== 'sub_frame') {
       return;
     }
 
@@ -166,6 +170,8 @@ class Lab {
         return;
       }
 
+      console.log(details);
+
       // add the item to the queue
       this.queue[details.requestId] = [host, this.typeMapping[details.type], a.origin + a.pathname];
     });
@@ -176,7 +182,7 @@ class Lab {
   }
 
   sync() {
-    console.log('Initiating synchronization process');
+    console.info('Initiating synchronization process');
     this.get().then((records) => {
 
       // for each item in the queue, we need to add it into records
@@ -199,15 +205,15 @@ class Lab {
 
       // now lets write the records back
       this.set(records).then(() => {
-        console.log('successfully wrote records back', records);
+        console.info('Successfully sychronized records', records);
       }).catch((err) => {
-        console.error('could not write records', records);
+        console.error('Unable to write records to local storage', records);
       });
     });
 
     // for debugging purposes, let's generate a CSP
     setTimeout(() => {
-      this.buildCSP('addons.mozilla.org')
+      this.buildCSP('pokeinthe.io')
     }, 1000);
   }
 }
