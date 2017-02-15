@@ -9,6 +9,13 @@
     "scripts": ["js/localforage.min.js", "js/laboratory.js"]
   },
 
+  "browser_action": {
+    "browser_style": true,
+    "default_icon": "img/vial.svg",
+    "default_title": "Laboratory by Mozilla",
+    "default_popup": "popup/laboratory.html"
+  },
+
   "permissions": [
     "storage", "tabs", "webNavigation", "webRequest", "http://*/*", "https://*/*"
   ]
