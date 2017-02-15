@@ -6,7 +6,7 @@
   "description": "Because good website security shouldn't only be available to mad scientists!",
 
   "background": {
-    "scripts": ["js/laboratory.js"]
+    "scripts": ["js/localforage.min.js", "js/laboratory.js"]
   },
 
   "permissions": [

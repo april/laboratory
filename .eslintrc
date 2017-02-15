@@ -5,6 +5,7 @@
     "extends":"airbnb",
     "globals":{
         "browser": true,
+        "localforage"; true,
         "Laboratory": true
     },
     "rules":{
