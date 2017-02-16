@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="bootstrap-3.3.7.min.css">
+    <link rel="stylesheet" href="bootstrap-toggle.min.css">
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <div class="panel">
+      <div class="panel-heading">
+      <h6 class="panel-title">Content Security Policy</h6>
+      </div>
+      <div class="panel-body">
+        <div>
+          <label class="checkbox-inline" for="toggle-csp-record">
+            <input id="toggle-csp-record" data-on="Yes" data-off="No" data-toggle="toggle" data-size="mini" type="checkbox">
+            Record this Site
+          </label>
+        </div>
+        <hr>
+        <pre id="csp-record"></pre>
+      </div>
+    </div>
+    <script src="../js/localforage.min.js"></script>
+    <script src="jquery-3.1.1.min.js"></script>
+    <script src="bootstrap-3.3.7.min.js"></script>
+    <script src="bootstrap-toggle.min.js"></script>
+    <script src="../js/laboratory.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

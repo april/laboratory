@@ -10,10 +10,10 @@
   },
 
   "browser_action": {
-    "browser_style": true,
+    "browser_style": false,
     "default_icon": "img/vial.svg",
     "default_title": "Laboratory by Mozilla",
-    "default_popup": "popup/laboratory.html"
+    "default_popup": "popup/popup.html"
   },
 
   "permissions": [
