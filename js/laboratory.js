@@ -1,6 +1,18 @@
 class Lab {
   constructor() {
     this.defaultStorage = {
+      config: {
+        strictness: {
+          'connect-src': 'self-if-same-origin-else-path',
+          'font-src': 'origin',
+          'frame-src': 'origin',
+          'img-src': 'origin',
+          'media-src': 'origin',
+          'object-src': 'path',
+          'script-src': 'self-if-same-origin-else-path',
+          'style-src': 'self-if-same-origin-else-directory',
+        },
+      },
       hosts: [],  // list of hosts to monitor
       records: {},  // hosts -> sources mapping
     };
@@ -18,9 +30,20 @@ class Lab {
       'media-src': 'origin',
       'object-src': 'path',
       'script-src': 'self-if-same-origin-else-path',
-      'style-src': 'self-if-same-origin-else-folder',
+      'style-src': 'self-if-same-origin-else-directory',
     };
   }
+
+  static get strictnessDefs() {
+    return {
+      directory: 'Directory',
+      origin: 'Origin',
+      path: 'Full path to resource',
+      'self-if-same-origin-else-directory': '\'self\' if same origin, otherwise directory',
+      'self-if-same-origin-else-path': '\'self\' if same origin, otherwise full path',
+    };
+  }
+
 
   static get typeMapping() {
     return {

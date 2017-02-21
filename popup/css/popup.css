@@ -3,7 +3,7 @@ body {
 }
 
 #csp-col {
-  overflow: hidden;
+  overflow: scroll;
   text-overflow: ellipsis;
   vertical-align: bottom;
   white-space: nowrap;
@@ -13,4 +13,21 @@ body {
   border: solid 1px #cccccc;
   border-radius: 4px;
   padding: 9.5px;
+}
+
+.csp-config-label {
+  font-family: monospace;
+  font-weight: bold;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.csp-config-row {
+  padding-bottom: 4px;
+  padding-top: 4px;
+}
+
+select.csp-form-control {
+  height: inherit;
+  padding: 4px 12px;
 }

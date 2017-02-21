@@ -15,10 +15,12 @@
         <div>
           <label class="checkbox-inline" for="toggle-csp-record">
             <input id="toggle-csp-record" data-on="Yes" data-onstyle="success" data-off="No" data-offstyle="danger" data-toggle="toggle" data-size="mini" type="checkbox">
-            Record this Site (currently always records)
+            Record this Site (currently always records all sites)
           </label>
         </div>
+
         <hr>
+
         <div class="container">
           <div class="row">
             <div id="csp-col" class="col-xs-10">
@@ -26,19 +28,139 @@
             </div>
             <div class="col-xs-2">
               <button type="button" id="csp-btn-copy" class="btn btn-default btn-md pull-right" data-clipboard-target="#csp-record">
-                <span class="glyphicon glyphicon-copy"></span>
+                <span class="glyphicon glyphicon-copy"></span> Copy
               </button>
             </div>
           </div>
         </div>
+
+        <hr>
+
+        <div class="container">
+          <div class="row" id="csp-config">
+            <div class="col-xs-12">
+            Configuration:
+            </div>
+
+            <!-- each CSP directive, probably should make this cleaner -->
+            <div class="col-xs-12 csp-config-row">
+              <div class="col-xs-2 csp-config-label">connect-src</div>
+              <div class="col-xs-9 col-xs-offset-1">
+                <select id="csp-config-connect-src" class="csp-form-control form-control" data-directive="connect-src">
+                  <option value="directory">directory</option>
+                  <option value="origin">origin</option>
+                  <option value="path">path</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-xs-12 csp-config-row">
+              <div class="col-xs-2 csp-config-label">font-src</div>
+              <div class="col-xs-9 col-xs-offset-1">
+                <select id="csp-config-font-src" class="csp-form-control form-control" data-directive="font-src">
+                  <option value="directory">directory</option>
+                  <option value="origin">origin</option>
+                  <option value="path">path</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-xs-12 csp-config-row">
+              <div class="col-xs-2 csp-config-label">frame-src</div>
+              <div class="col-xs-9 col-xs-offset-1">
+                <select id="csp-config-frame-src" class="csp-form-control form-control" data-directive="frame-src">
+                  <option value="directory">directory</option>
+                  <option value="origin">origin</option>
+                  <option value="path">path</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-xs-12 csp-config-row">
+              <div class="col-xs-2 csp-config-label">img-src</div>
+              <div class="col-xs-9 col-xs-offset-1">
+                <select id="csp-config-img-src" class="csp-form-control form-control" data-directive="img-src">
+                  <option value="directory">directory</option>
+                  <option value="origin">origin</option>
+                  <option value="path">path</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-xs-12 csp-config-row">
+              <div class="col-xs-2 csp-config-label">media-src</div>
+              <div class="col-xs-9 col-xs-offset-1">
+                <select id="csp-config-media-src" class="csp-form-control form-control" data-directive="media-src">
+                  <option value="directory">directory</option>
+                  <option value="origin">origin</option>
+                  <option value="path">path</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-xs-12 csp-config-row">
+              <div class="col-xs-2 csp-config-label">object-src</div>
+              <div class="col-xs-9 col-xs-offset-1">
+                <select id="csp-config-object-src" class="csp-form-control form-control" data-directive="object-src">
+                  <option value="directory">directory</option>
+                  <option value="origin">origin</option>
+                  <option value="path">path</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-xs-12 csp-config-row">
+              <div class="col-xs-2 csp-config-label">script-src</div>
+              <div class="col-xs-9 col-xs-offset-1">
+                <select id="csp-config-script-src" class="csp-form-control form-control" data-directive="script-src">
+                  <option value="directory">directory</option>
+                  <option value="origin">origin</option>
+                  <option value="path">path</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-xs-12 csp-config-row">
+              <div class="col-xs-2 csp-config-label">style-src</div>
+              <div class="col-xs-9 col-xs-offset-1">
+                <select id="csp-config-style-src" class="csp-form-control form-control" data-directive="style-src">
+                  <option value="directory">directory</option>
+                  <option value="origin">origin</option>
+                  <option value="path">path</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="container">
+          <div class="row">
+            <div class="col-xs-12">
+              <button type="button" id="btn-trash" class="btn btn-default btn-md pull-right" aria-label="Delete All Records">
+                <span class="glyphicon glyphicon-trash"></span> Delete All Records
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
     <script src="../js/localforage.min.js"></script>
     <script src="js/jquery-3.1.1.min.js"></script>
     <script src="js/bootstrap-3.3.7.min.js"></script>
-    <script src="js/clipboard.min.js"></script>
+    <script src="js/clipboard-1.6.0.min.js"></script>
     <script src="../js/laboratory.js"></script>
     <script src="js/popup.js"></script>
-<!--       <input id="csp-clipboard" class="hidden"></input>
- -->  </body>
+  </body>
 </html>
