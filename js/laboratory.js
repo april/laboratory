@@ -177,7 +177,7 @@ class Lab {
   }
 }
 
-console.log('Restarting Laboratory by Mozilla');
+console.log('Initializing Laboratory popup');
 
 /* initialize the extension */
 const lab = new Lab();

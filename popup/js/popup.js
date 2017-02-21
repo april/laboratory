@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // initialize all our clipboards
   const clipboard = new Clipboard('.btn');
 
-  // bind a listener for the crash icon to delete all records
+  // bind a listener for the trash icon to delete all records
   document.getElementById('btn-trash').addEventListener('click', () => {
     lab.initStorage(true);
   });
