@@ -1,0 +1,16 @@
+body {
+  width: 640px;
+}
+
+#csp-col {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+
+  /* copy pre formatting */
+  background-color: #f5f5f5;
+  border: solid 1px #cccccc;
+  border-radius: 4px;
+  padding: 9.5px;
+}

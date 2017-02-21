@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="bootstrap-3.3.7.min.css">
-    <link rel="stylesheet" href="bootstrap-toggle.min.css">
-    <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="css/bootstrap-3.3.7.min.css">
+    <link rel="stylesheet" href="css/bootstrap-toggle.min.css">
+    <link rel="stylesheet" href="css/popup.css">
   </head>
   <body>
     <div class="panel">
@@ -14,19 +14,31 @@
       <div class="panel-body">
         <div>
           <label class="checkbox-inline" for="toggle-csp-record">
-            <input id="toggle-csp-record" data-on="Yes" data-off="No" data-toggle="toggle" data-size="mini" type="checkbox">
-            Record this Site
+            <input id="toggle-csp-record" data-on="Yes" data-onstyle="success" data-off="No" data-offstyle="danger" data-toggle="toggle" data-size="mini" type="checkbox">
+            Record this Site (currently always records)
           </label>
         </div>
         <hr>
-        <pre id="csp-record"></pre>
+        <div class="container">
+          <div class="row">
+            <div id="csp-col" class="col-xs-10">
+              <samp id="csp-record"></samp>
+            </div>
+            <div class="col-xs-2">
+              <button type="button" id="csp-btn-copy" class="btn btn-default btn-md pull-right" data-clipboard-target="#csp-record">
+                <span class="glyphicon glyphicon-copy"></span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <script src="../js/localforage.min.js"></script>
-    <script src="jquery-3.1.1.min.js"></script>
-    <script src="bootstrap-3.3.7.min.js"></script>
-    <script src="bootstrap-toggle.min.js"></script>
+    <script src="js/jquery-3.1.1.min.js"></script>
+    <script src="js/bootstrap-3.3.7.min.js"></script>
+    <script src="js/clipboard.min.js"></script>
     <script src="../js/laboratory.js"></script>
-    <script src="popup.js"></script>
-  </body>
+    <script src="js/popup.js"></script>
+<!--       <input id="csp-clipboard" class="hidden"></input>
+ -->  </body>
 </html>

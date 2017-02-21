@@ -83,9 +83,9 @@ class Lab {
   }
 
   requestMonitor(details) {
-    // ignore main_frame requests, that's just the primary request (not a subresource)
-    // also ignore csp_report requests, as they're not sources
-    if (['main_frame', 'csp_report'].includes(details.type)) {
+    console.log(details);
+    // ignore requests that are for things that CSP doesn't deal with
+    if (['main_frame', 'beacon', 'csp_report'].includes(details.type)) {
       return;
     }
 
@@ -113,6 +113,11 @@ class Lab {
       this.queue[details.requestId] = [host, Lab.typeMapping[details.type], a.origin + a.pathname];
     });
   }
+
+  storageMonitor(changes, area) {
+    console.log('storage was changed', changes, area);
+  }
+
 
   static write(key, value) {
     return localforage.setItem(key, value);  // returns a promise
@@ -160,4 +165,4 @@ browser.webRequest.onResponseStarted.addListener(details => lab.requestMonitor(d
   { urls: ['https://*/*'] });  // TODO, configure this list
 
 /* Synchronize the local storage every time a page finishes loading */
-browser.webNavigation.onCompleted.addListener(details => lab.sync(details));
+browser.webNavigation.onCompleted.addListener(() => lab.sync());

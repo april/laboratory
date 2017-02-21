@@ -1,10 +1,12 @@
 {
     "env":{
-        "browser":true
+        "browser":true,
+        "jquery": true
     },
     "extends":"airbnb",
     "globals":{
         "browser": true,
+        "Clipboard": true,
         "localforage": true,
         "Lab": true
     },

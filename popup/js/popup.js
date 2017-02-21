@@ -10,12 +10,12 @@ const buildCSP = (host) => {
 
     // get the record for our host
     Lab.read('records').then((records) => {
-      Object.entries(records[host]).forEach((entry) => {
-        // if we don't have a record for the host, let's bail
-        if (!(host in records)) {
-          reject(undefined);
-        }
+      // if it's a host we don't have records for, let's just return default-src 'none'
+      if (!(host in records)) {
+        return resolve(csp);
+      }
 
+      Object.entries(records[host]).forEach((entry) => {
         const directive = entry[0];
         const sources = entry[1];
 
@@ -102,8 +102,23 @@ const getCurrentTabHost = () => {
 
 
 const insertCSP = (csp) => {
-  console.log(document.getElementsByTagName('div'));
-  document.getElementById('csp-report').textContent = csp;
+  document.getElementById('csp-record').textContent = csp;
+};
+
+
+const determineToggleState = (host) => {
+  // get the list of current hosts and set the toggle to on if it's in there
+  return new Promise((resolve, reject) => {
+    Lab.read('hosts').then((hosts) => {
+      if (hosts.includes(host)) {
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    }).catch((err) => {
+      reject(err);
+    });
+  });
 };
 
 
@@ -138,13 +153,19 @@ const toggleRecord = function toggleRecord(host, enable) {
 
 /* set up our event listeners */
 document.addEventListener('DOMContentLoaded', () => {
-  $('#toggle-csp-record').bootstrapToggle();
-
-  // set a listener for toggling for a site
-  $('#toggle-csp-record').change((event) => {
-    getCurrentTabHost().then(host => toggleRecord(host, event.target.checked));
+  // retrieve a site's active status and check the box if its active
+  getCurrentTabHost().then(host => determineToggleState(host)).then((state) => {
+    $('#toggle-csp-record').prop('checked', state);
+  }).then(() => {
+    // set a listener for toggling for a site
+    $('#toggle-csp-record').change((event) => {
+      getCurrentTabHost().then(host => toggleRecord(host, event.target.checked));
+    });
   });
 
-  // disable the current CSP if we have one
+  // display the current CSP if we have one
   getCurrentTabHost().then(host => buildCSP(host)).then(csp => insertCSP(csp));
+
+  // initialize all our clipboards
+  const clipboard = new Clipboard('.btn');
 });
