@@ -17,6 +17,6 @@
   },
 
   "permissions": [
-    "storage", "tabs", "webNavigation", "webRequest", "http://*/*", "https://*/*"
+    "storage", "tabs", "webNavigation", "webRequest", "webRequestBlocking", "http://*/*", "https://*/*"
   ]
 }

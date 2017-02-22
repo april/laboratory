@@ -105,6 +105,30 @@ class Lab {
     });
   }
 
+
+  insertCspReportOnlyHeaderExperiment(request) {
+    // return new Promise((resolve, reject) => {
+    //   console.log('csp report only header', request.responseHeaders);
+
+    //   // push a response header onto the stack to block all requests in report only mode
+    //   request.responseHeaders.push({
+    //     name: 'Content-Security-Policy-Report-Only',
+    //     value: 'default-src \'none\'',
+    //   });
+
+    //   return resolve({ responseHeaders: request.responseHeaders });
+    // });
+
+    request.responseHeaders.push({
+      name: 'Content-Security-Policy-Report-Only',
+      value: 'default-src \'none\'',
+    });
+
+    console.log({responseHeaders: request.responseHeaders});
+    return { responseHeaders: request.responseHeaders };
+  }
+
+
   requestMonitor(details) {
     console.log(details);
     // ignore requests that are for things that CSP doesn't deal with
@@ -162,7 +186,7 @@ class Lab {
           records[host] = Lab.siteTemplate;
         }
 
-        if (!(url in records[host][directive])) {
+        if (!(records[host][directive].includes(url))) {
           records[host][directive].push(url);
         }
       });
@@ -189,3 +213,8 @@ browser.webRequest.onResponseStarted.addListener(details => lab.requestMonitor(d
 
 /* Synchronize the local storage every time a page finishes loading */
 browser.webNavigation.onCompleted.addListener(() => lab.sync());
+
+// experiment with csp report only
+browser.webRequest.onHeadersReceived.addListener(lab.insertCspReportOnlyHeaderExperiment,
+  { urls: ['https://*/*'] },
+  ['blocking', 'responseHeaders']);
