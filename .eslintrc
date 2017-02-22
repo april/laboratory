@@ -8,6 +8,7 @@
         "browser": true,
         "Clipboard": true,
         "localforage": true,
+        "lab": true,
         "Lab": true
     },
     "rules":{

@@ -17,8 +17,10 @@ class Lab {
       records: {},  // hosts -> sources mapping
     };
 
+    this.listeners = [];
     this.queue = {};
   }
+
 
   // TODO: make this configurable
   static get strictness() {
@@ -34,6 +36,7 @@ class Lab {
     };
   }
 
+
   static get strictnessDefs() {
     return {
       directory: 'Directory',
@@ -45,28 +48,16 @@ class Lab {
   }
 
 
-  static get typeMapping() {
-    return {
-      font: 'font-src',
-      image: 'img-src',
-      media: 'media-src',
-      object: 'object-src',
-      script: 'script-src',
-      stylesheet: 'style-src',
-      sub_frame: 'frame-src',
-      xmlhttprequest: 'connect-src',
-    };
-  }
-
   static extractHostname(url) {
     const a = document.createElement('a');
     a.href = url;
     return a.host;
   }
 
-  static get siteTemplate() {
+
+  siteTemplate() {
     const site = {};
-    Object.values(Lab.typeMapping).map((x) => {
+    Object.keys(this.defaultStorage.config.strictness).map((x) => {
       site[x] = [];
       return undefined;
     });
@@ -74,12 +65,55 @@ class Lab {
     return site;
   }
 
+
   static read(key) {
     return localforage.getItem(key);  // returns a promise
   }
 
+
+  init(hosts) {
+    let listener;
+
+    console.log('current hosts list is ', hosts);
+    // delete all the old listeners
+    if (browser.webRequest.onHeadersReceived.hasListener(lab.injectCspReportOnlyHeader)) {
+      console.log('removing listener a');
+      browser.webRequest.onHeadersReceived.removeListener(lab.injectCspReportOnlyHeader);
+    }
+    if (browser.webRequest.onBeforeRequest.hasListener(lab.ingestCspReport)) {
+      console.log('removing listener b');
+      browser.webRequest.onBeforeRequest.removeListener(lab.ingestCspReport);
+    }
+
+
+    // we don't need to add any listeners if we're not yet monitoring any hosts
+    if (hosts === null) { return; }
+    if (hosts.length === 0) { return; }
+
+    // listen for all requests and inject a CSPRO header
+    const urls = [];
+
+    for (const host of hosts) {
+      urls.push(`http://${host}/*`);
+      urls.push(`https://${host}/*`);
+    }
+
+    // listener = request => this.injectCspReportOnlyHeader(request);
+    browser.webRequest.onHeadersReceived.addListener(
+      lab.injectCspReportOnlyHeader,
+      { urls: urls },
+      ['blocking', 'responseHeaders']);
+
+    browser.webRequest.onBeforeRequest.addListener(
+      lab.ingestCspReport,
+      { urls: ['*://*/laboratory-fake-csp-report'] },
+      ['blocking', 'requestBody']);
+
+    console.log('Laboratory monitoring the following URLs:', urls.join(', '));
+  }
+
+
   initStorage(clear = false) {
-    // clear the local storage -- clear this later
     if (clear) {
       localforage.clear().then(() => {
         console.log('Local storage has been cleared');
@@ -106,69 +140,61 @@ class Lab {
   }
 
 
-  insertCspReportOnlyHeaderExperiment(request) {
-    // return new Promise((resolve, reject) => {
-    //   console.log('csp report only header', request.responseHeaders);
+  ingestCspReport(request) {
+    return new Promise((resolve, reject) => {
+      const cancel = { cancel: true };
+      const decoder = new TextDecoder('utf8');
+      const report = JSON.parse(decoder.decode(request.requestBody.raw[0].bytes))['csp-report'];
 
-    //   // push a response header onto the stack to block all requests in report only mode
-    //   request.responseHeaders.push({
-    //     name: 'Content-Security-Policy-Report-Only',
-    //     value: 'default-src \'none\'',
-    //   });
+      const host = Lab.extractHostname(report['document-uri']);
+      let uri = report['blocked-uri'];
+      const directive = report['violated-directive'].split(' ')[0];
 
-    //   return resolve({ responseHeaders: request.responseHeaders });
-    // });
-
-    request.responseHeaders.push({
-      name: 'Content-Security-Policy-Report-Only',
-      value: 'default-src \'none\'',
-    });
-
-    console.log({responseHeaders: request.responseHeaders});
-    return { responseHeaders: request.responseHeaders };
-  }
-
-
-  requestMonitor(details) {
-    console.log(details);
-    // ignore requests that are for things that CSP doesn't deal with
-    if (['main_frame', 'beacon', 'csp_report'].includes(details.type)) {
-      return;
-    }
-
-    // for requests that have a frameId (eg iframes), we only want to record them if they're
-    // a sub_frame request; all of the frame's resources are sandboxed as far as CSP goes
-    if (details.frameId !== 0 && details.type !== 'sub_frame') {
-      return;
-    }
-
-    // get the hostname of the subresource via its tabId
-    browser.tabs.get(details.tabId).then((t) => {
-      const host = Lab.extractHostname(t.url);
-
-      // and store the url
-      const a = document.createElement('a');
-      a.href = details.url;
-
-      // throw an error to the console if we see a request type that we don't know
-      if (!(details.type in Lab.typeMapping)) {
-        console.error('Error: Unknown request type encountered', details);
-        return;
+      // catch the special cases (data, unsafe)
+      switch (uri) {
+        case 'self':
+          uri = '\'unsafe-inline\'';  // boo
+          break;
+        case 'data':
+          uri = 'data:';
+          break;
+        default:
+          break;
       }
 
-      // add the item to the queue
-      this.queue[details.requestId] = [host, Lab.typeMapping[details.type], a.origin + a.pathname];
+      this.queue[request.requestId] = [host, directive, uri];
+      return resolve(cancel);
     });
   }
 
-  storageMonitor(changes, area) {
-    console.log('storage was changed', changes, area);
+
+  injectCspReportOnlyHeader(request) {
+    console.log('injecting a cspro header');
+    return new Promise((resolve, reject) => {
+      // todo: remove an existing CSP
+      let i = request.responseHeaders.length;
+      while (i > 0) {
+        i -= 1;
+        if (['content-security-policy', 'content-security-policy-report-only'].includes(request.responseHeaders[i].name.toLowerCase())) {
+          request.responseHeaders.splice(i, 1);
+        }
+      }
+
+      // push a response header onto the stack to block all requests in report only mode
+      request.responseHeaders.push({
+        name: 'Content-Security-Policy-Report-Only',
+        value: 'default-src \'none\'; connect-src \'none\'; font-src \'none\'; frame-src \'none\'; img-src \'none\'; media-src \'none\'; object-src \'none\'; script-src \'none\'; style-src \'none\'; report-uri /laboratory-fake-csp-report',
+      });
+
+      return resolve({ responseHeaders: request.responseHeaders });
+    });
   }
 
 
   static write(key, value) {
     return localforage.setItem(key, value);  // returns a promise
   }
+
 
   sync() {
     console.info('Initiating synchronization process');
@@ -183,7 +209,7 @@ class Lab {
 
         // initialize to a blank CSP if it's the first time we've seen the site
         if (!(host in records)) {
-          records[host] = Lab.siteTemplate;
+          records[host] = this.siteTemplate();
         }
 
         if (!(records[host][directive].includes(url))) {
@@ -201,20 +227,12 @@ class Lab {
   }
 }
 
-console.log('Initializing Laboratory popup');
+console.log('Initializing Laboratory');
 
 /* initialize the extension */
 const lab = new Lab();
 lab.initStorage();
-
-/* let's begin the flaggelation */
-browser.webRequest.onResponseStarted.addListener(details => lab.requestMonitor(details),
-  { urls: ['https://*/*'] });  // TODO, configure this list
+Lab.read('hosts').then((hosts) => { lab.init(hosts); });
 
 /* Synchronize the local storage every time a page finishes loading */
 browser.webNavigation.onCompleted.addListener(() => lab.sync());
-
-// experiment with csp report only
-browser.webRequest.onHeadersReceived.addListener(lab.insertCspReportOnlyHeaderExperiment,
-  { urls: ['https://*/*'] },
-  ['blocking', 'responseHeaders']);

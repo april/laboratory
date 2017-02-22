@@ -5,8 +5,7 @@ const buildCSP = (host, strictness) => {
     let path;
 
     // first, we need to construct a shadow CSP that contains directives by strictness
-    console.log('lab is', Lab, 'host is', host, 'strictness is', strictness);
-    const shadowCSP = Lab.siteTemplate;
+    const shadowCSP = lab.siteTemplate();
 
     // get the record for our host
     Lab.read('records').then((records) => {
@@ -56,6 +55,12 @@ const buildCSP = (host, strictness) => {
               break;
           }
 
+
+          // if it's a special case, we don't do processing
+          if (['\'unsafe-eval\'', '\'unsafe-inline\'', 'data:'].includes(source)) {
+            mungedSource = source;
+          }
+
           // now we simply add the entry to the shadowCSP, if it's not already there
           if (!shadowCSP[directive].includes(mungedSource)) {
             shadowCSP[directive].push(mungedSource);
@@ -75,7 +80,6 @@ const buildCSP = (host, strictness) => {
 
       // strip off the trailing semicolon
       csp = csp.slice(0, -1);
-      console.log(`Suggested CSP for ${host} is`, csp);
 
       // return our resolved CSP
       return resolve(csp);
@@ -106,7 +110,6 @@ const insertCspConfig = () => {
     Object.entries(strictness).forEach((kv) => {
       const directive = kv[0];
       const setting = kv[1];
-      console.log('elem is', `csp-config-${directive}`);
 
       // set the proper value on the select
       document.getElementById(`csp-config-${directive}`).value = setting;
@@ -164,7 +167,6 @@ const determineToggleState = (host) => {  // TODO: make this more generic
 
 
 const toggleRecord = function toggleRecord(host, enable) {
-  console.log('enable is', enable, 'host is', host);
   Lab.read('hosts').then((hosts) => {
     // if it's in the hosts list + enable -> move on
     // if it's not in the hosts list + disable -> move on
@@ -187,7 +189,7 @@ const toggleRecord = function toggleRecord(host, enable) {
       console.log('Successfully updated hosts to ', hosts);
     }).catch((err) => {
       console.log(err);
-    });
+    }).then(() => lab.init(hosts));
   });
 };
 
@@ -216,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // bind a listener for the trash icon to delete all records
   document.getElementById('btn-trash').addEventListener('click', () => {
     lab.initStorage(true);
+    lab.init([]);
   });
 
   // bind a listener for every time we change a config setting, TODO: make this more generic
