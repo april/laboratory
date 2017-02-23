@@ -230,5 +230,5 @@ lab.getLocalState().then(state => lab.setState(state)).then(() => {
 
 /* Synchronize the local storage every time a page finishes loading */
 browser.webNavigation.onCompleted.addListener(() => {
-  lab.writeLocalState().then('Laboratory: Saved state during onCompleted()');
+  lab.writeLocalState().then();
 });
