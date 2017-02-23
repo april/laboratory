@@ -1,3 +1,5 @@
+import 'localforage';
+
 class Lab {
   constructor() {
     this.defaultStorage = {

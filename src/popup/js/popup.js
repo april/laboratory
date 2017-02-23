@@ -1,3 +1,8 @@
+import 'bootstrap-loader';
+import '../../../node_modules/bootstrap-toggle/css/bootstrap-toggle.css';
+import '../../../node_modules/bootstrap-toggle/js/bootstrap-toggle.js';
+import '../css/popup.css';
+
 const buildCSP = (host, strictness) => {
   return new Promise((resolve, reject) => {
     const a = document.createElement('a');

@@ -1,0 +1,41 @@
+{
+  "name": "laboratory",
+  "version": "1.0.0",
+  "description": "Because good website security shouldn't only be available to mad scientists!",
+  "scripts": {
+    "compile": "webpack --config=config/webpack.config.js",
+    "package": "web-ext build -s build -a dist",
+    "build": "npm run compile && npm run package"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marumari/laboratory.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marumari/laboratory/issues"
+  },
+  "homepage": "https://github.com/marumari/laboratory#readme",
+  "dependencies": {
+    "babel-core": "^6.23.1",
+    "babel-loader": "^6.3.2",
+    "babel-preset-es2015": "^6.22.0",
+    "bootstrap-loader": "^2.0.0-beta.21",
+    "bootstrap-sass": "^3.3.7",
+    "bootstrap-toggle": "^2.2.2",
+    "clipboard": "^1.6.0",
+    "css-loader": "^0.26.1",
+    "eslint-plugin-jsx-a11y": "^2.2.3",
+    "eslint-plugin-react": "^6.10.0",
+    "extract-text-webpack-plugin": "^2.0.0-rc.3",
+    "file-loader": "^0.10.0",
+    "jquery": "^3.1.1",
+    "localforage": "^1.5.0",
+    "node-sass": "^4.5.0",
+    "resolve-url-loader": "^2.0.0",
+    "sass-loader": "^6.0.2",
+    "style-loader": "^0.13.1",
+    "url-loader": "^0.5.7",
+    "web-ext": "^1.8.1",
+    "webpack": "^2.2.1"
+  }
+}
