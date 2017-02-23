@@ -2,6 +2,15 @@ body {
   width: 640px;
 }
 
+hr {
+  margin: 15px 0;
+}
+
+.panel {
+  box-shadow: inherit;
+  margin-bottom: 0px;
+}
+
 #csp-col {
   overflow: scroll;
   text-overflow: ellipsis;
@@ -13,6 +22,14 @@ body {
   border: solid 1px #cccccc;
   border-radius: 4px;
   padding: 9.5px;
+}
+
+#csp-col-header {
+  margin-bottom: 10px;
+}
+
+#csp-config {
+  margin-bottom: 10px;
 }
 
 .csp-config-label {

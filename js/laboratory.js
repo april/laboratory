@@ -1,7 +1,8 @@
 class Lab {
   constructor() {
-    this.defaultStorage = {
+    this.defaultState = {
       config: {
+        hosts: [],  // list of hosts to monitor
         strictness: {
           'connect-src': 'self-if-same-origin-else-path',
           'font-src': 'origin',
@@ -13,27 +14,22 @@ class Lab {
           'style-src': 'self-if-same-origin-else-directory',
         },
       },
-      hosts: [],  // list of hosts to monitor
       records: {},  // hosts -> sources mapping
     };
 
     this.listeners = [];
     this.queue = {};
+
+    // hoist static functions or something
+    this.extractHostname = Lab.extractHostname;
+    this.unmonitorableSites = Lab.unmonitorableSites;
   }
 
 
-  // TODO: make this configurable
-  static get strictness() {
-    return {
-      'connect-src': 'origin',
-      'font-src': 'origin',
-      'frame-src': 'origin',
-      'img-src': 'origin',
-      'media-src': 'origin',
-      'object-src': 'path',
-      'script-src': 'self-if-same-origin-else-path',
-      'style-src': 'self-if-same-origin-else-directory',
-    };
+  static extractHostname(url) {
+    const a = document.createElement('a');
+    a.href = url;
+    return a.host;
   }
 
 
@@ -48,43 +44,32 @@ class Lab {
   }
 
 
-  static extractHostname(url) {
-    const a = document.createElement('a');
-    a.href = url;
-    return a.host;
+  static get unmonitorableSites() {
+    return [
+      'addons.mozilla.org',
+      'discovery.addons.mozilla.org',
+      'testpilot.firefox.com',
+    ];
   }
 
 
   siteTemplate() {
     const site = {};
-    Object.keys(this.defaultStorage.config.strictness).map((x) => {
-      site[x] = [];
-      return undefined;
+    Object.keys(this.defaultState.config.strictness).map((x) => {
+      site[x] = [];  // TODO: convert to Set once localforage supports it
+      // return undefined;
     });
 
     return site;
   }
 
 
-  static read(key) {
-    return localforage.getItem(key);  // returns a promise
-  }
-
-
-  init(hosts) {
+  init() {
+    const hosts = this.state.config.hosts;
     let listener;
 
-    console.log('current hosts list is ', hosts);
     // delete all the old listeners
-    if (browser.webRequest.onHeadersReceived.hasListener(lab.injectCspReportOnlyHeader)) {
-      console.log('removing listener a');
-      browser.webRequest.onHeadersReceived.removeListener(lab.injectCspReportOnlyHeader);
-    }
-    if (browser.webRequest.onBeforeRequest.hasListener(lab.ingestCspReport)) {
-      console.log('removing listener b');
-      browser.webRequest.onBeforeRequest.removeListener(lab.ingestCspReport);
-    }
-
+    this.clearListeners();
 
     // we don't need to add any listeners if we're not yet monitoring any hosts
     if (hosts === null) { return; }
@@ -98,45 +83,74 @@ class Lab {
       urls.push(`https://${host}/*`);
     }
 
-    // listener = request => this.injectCspReportOnlyHeader(request);
+    // add the listener to inject CSPRO headers
+    listener = request => this.injectCspReportOnlyHeader(request);
     browser.webRequest.onHeadersReceived.addListener(
-      lab.injectCspReportOnlyHeader,
-      { urls: urls },
+      listener,
+      { urls },
       ['blocking', 'responseHeaders']);
 
+    // and track it
+    this.listeners.push({
+      event: browser.webRequest.onHeadersReceived,
+      listener,
+    });
+
+    // add the listener to ingest the fake CSP reports
+    listener = request => this.ingestCspReport(request);
     browser.webRequest.onBeforeRequest.addListener(
-      lab.ingestCspReport,
+      listener,
       { urls: ['*://*/laboratory-fake-csp-report'] },
       ['blocking', 'requestBody']);
+
+    // and track it too
+    this.listeners.push({
+      event: browser.webRequest.onBeforeRequest,
+      listener,
+    });
 
     console.log('Laboratory monitoring the following URLs:', urls.join(', '));
   }
 
 
-  initStorage(clear = false) {
-    if (clear) {
-      localforage.clear().then(() => {
-        console.log('Local storage has been cleared');
-      }).catch((err) => {
-        console.error(err);
-      });
-    }
+  clearListeners() {
+    this.listeners.forEach(l => l.event.removeListener(l.listener));
+    this.listeners = [];
+  }
 
-    // set the default values, if they're not already set
-    Object.entries(this.defaultStorage).forEach((ds) => {
-      const key = ds[0];  // simply for clarity
-      const defaultValue = ds[1];
 
-      Lab.read(key).then((value) => {
-        if (value === null) { // unset in local forage
-          Lab.write(key, defaultValue).then(() => {
-            console.log(`Initialized ${key} to ${JSON.stringify(defaultValue)}`);
-          }).catch((err) => {
-            console.error(err);
-          });
+  clearState() {
+    console.log('Laboratory: Clearing all local storage');
+    // return localforage.clear();
+    this.state = this.defaultState;
+  }
+
+
+  getLocalState() {
+    return new Promise((resolve, reject) => {
+      // if state already exists, we can just return that
+      if (this.state !== undefined) {
+        return resolve(this.state);
+      }
+
+      localforage.getItem('state').then((state) => {
+        if (state === null) {
+          return resolve(this.defaultState);
         }
+
+        return resolve(state);
       });
     });
+  }
+
+
+  setState(state) {
+    this.state = state;
+  }
+
+
+  writeLocalState() {
+    return localforage.setItem('state', this.state);
   }
 
 
@@ -144,11 +158,13 @@ class Lab {
     return new Promise((resolve, reject) => {
       const cancel = { cancel: true };
       const decoder = new TextDecoder('utf8');
-      const report = JSON.parse(decoder.decode(request.requestBody.raw[0].bytes))['csp-report'];
+      const records = this.state.records;
 
-      const host = Lab.extractHostname(report['document-uri']);
-      let uri = report['blocked-uri'];
+      // parse the CSP report
+      const report = JSON.parse(decoder.decode(request.requestBody.raw[0].bytes))['csp-report'];
       const directive = report['violated-directive'].split(' ')[0];
+      const host = Lab.extractHostname(report['document-uri']);
+      const uri = report['blocked-uri'];
 
       // catch the special cases (data, unsafe)
       switch (uri) {
@@ -162,14 +178,22 @@ class Lab {
           break;
       }
 
-      this.queue[request.requestId] = [host, directive, uri];
+      // add the host to the records, if it's not already there
+      if (!(host in records)) {
+        records[host] = this.siteTemplate();
+      }
+
+      // add the uri to the resources for that directive
+      if (!(records[host][directive].includes(uri))) {
+        records[host][directive].push(uri);
+      }
+
       return resolve(cancel);
     });
   }
 
 
   injectCspReportOnlyHeader(request) {
-    console.log('injecting a cspro header');
     return new Promise((resolve, reject) => {
       // todo: remove an existing CSP
       let i = request.responseHeaders.length;
@@ -189,50 +213,22 @@ class Lab {
       return resolve({ responseHeaders: request.responseHeaders });
     });
   }
-
-
-  static write(key, value) {
-    return localforage.setItem(key, value);  // returns a promise
-  }
-
-
-  sync() {
-    console.info('Initiating synchronization process');
-    Lab.read('records').then((records) => {
-      // for each item in the queue, we need to add it into records
-      Object.entries(this.queue).forEach((requests) => {
-        delete this.queue[requests[0]];  // dequeue the entry
-
-        const host = requests[1][0];
-        const directive = requests[1][1];
-        const url = requests[1][2];
-
-        // initialize to a blank CSP if it's the first time we've seen the site
-        if (!(host in records)) {
-          records[host] = this.siteTemplate();
-        }
-
-        if (!(records[host][directive].includes(url))) {
-          records[host][directive].push(url);
-        }
-      });
-
-      // now lets write the records back
-      Lab.write('records', records).then(() => {
-        console.info('Successfully sychronized records', records);
-      }).catch((err) => {
-        console.error('Unable to write records to local storage', err);
-      });
-    });
-  }
 }
 
-console.log('Initializing Laboratory');
 
-/* initialize the extension */
+console.log('Laboratory: Initializing');
 const lab = new Lab();
-lab.initStorage();
-Lab.read('hosts').then((hosts) => { lab.init(hosts); });
+lab.getLocalState().then(state => lab.setState(state)).then(() => {
+  // expose state to the popup
+  Object.assign(window, {
+    Lab: lab,
+  });
+
+  lab.init();
+});
+
 
 /* Synchronize the local storage every time a page finishes loading */
-browser.webNavigation.onCompleted.addListener(() => lab.sync());
+browser.webNavigation.onCompleted.addListener(() => {
+  lab.writeLocalState().then('Laboratory: Saved state during onCompleted()');
+});

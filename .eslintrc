@@ -12,6 +12,7 @@
         "Lab": true
     },
     "rules":{
+        "arrow-parens": "as-needed",
         "no-param-reassign": 0
     }
 }
