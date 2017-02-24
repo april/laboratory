@@ -48,3 +48,7 @@ select.csp-form-control {
   height: inherit;
   padding: 4px 12px;
 }
+
+#csp-recording-count-row {
+  margin-top: 10px;
+}

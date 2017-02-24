@@ -141,6 +141,12 @@ const insertCSP = () => {
 };
 
 
+const insertRecordingCount = () => {
+  // insert the proper count of how many sites are being recorded
+  document.getElementById('csp-recording-count').textContent = window.Lab.state.config.hosts.length.toString();
+};
+
+
 const determineToggleState = host => {  // TODO: make this more generic
   // get the list of current hosts and set the toggle to on if it's in there
   return new Promise((resolve, reject) => {
@@ -198,6 +204,9 @@ browser.runtime.getBackgroundPage().then(winder => {
 
 /* set up our event listeners */
 document.addEventListener('DOMContentLoaded', () => {
+  // set the correct number of recorded hosts
+  insertRecordingCount();
+
   // retrieve a site's active status and check the box if its active
   getCurrentTabHost().then(host => determineToggleState(host)).then(state => {
     $('#toggle-csp-record').prop('checked', state);
@@ -206,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#toggle-csp-record').change(event => {
       getCurrentTabHost().then(host => {
         toggleRecord(host, event.target.checked);
+        insertRecordingCount();
         window.Lab.writeLocalState().then(() => insertCSP());
       });
     });
@@ -227,6 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.Lab.writeLocalState().then(() => {
       $('#toggle-csp-record').prop('checked', false);  // unset checkbox
       window.Lab.init();
+      insertRecordingCount();
       insertCSP();
       insertCspConfig();
     });
