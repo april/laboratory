@@ -222,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // bind a listener for the trash icon to delete all records
   document.getElementById('btn-trash').addEventListener('click', () => {
-    window.Lab.clearListeners();
     window.Lab.clearState();
 
     window.Lab.writeLocalState().then((state) => {

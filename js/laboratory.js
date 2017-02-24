@@ -19,9 +19,6 @@ class Lab {
       }
     };
 
-    this.listeners = [];
-    this.queue = {};
-
     // hoist static functions or something
     this.extractHostname = Lab.extractHostname;
     this.unmonitorableSites = Lab.unmonitorableSites;
@@ -69,8 +66,7 @@ class Lab {
     const hosts = this.state.config.hosts;
     let listener;
 
-    // delete all the old listeners
-    this.clearListeners();
+
 
     // we don't need to add any listeners if we're not yet monitoring any hosts
     if (hosts === null) { return; }
@@ -84,41 +80,20 @@ class Lab {
       urls.push(`https://${host}/*`);
     }
 
-    // add the listener to inject CSPRO headers
-    listener = request => this.injectCspReportOnlyHeader(request);
+    // we create a listener here to inject CSPRO headers
+    // we define it globally so that we don't have to keep recreating anonymous functions,
+    // which has the side effect of making it much easier to remove the listener
+    if (this.onHeadersReceivedListener === undefined) {
+      this.onHeadersReceivedListener = (request) => this.injectCspReportOnlyHeader(request);
+    } else {
+      // delete the old listener
+      browser.webRequest.onHeadersReceived.removeListener(this.onHeadersReceivedListener);
+    }
+
     browser.webRequest.onHeadersReceived.addListener(
-      listener,
+      this.onHeadersReceivedListener,
       { urls },
       ['blocking', 'responseHeaders']);
-
-    // and track it
-    this.listeners.push({
-      event: browser.webRequest.onHeadersReceived,
-      listener,
-    });
-
-    // add the listener to ingest the fake CSP reports  TODO: make this on startup, don't add/remove it
-    listener = request => this.ingestCspReport(request);
-    browser.webRequest.onBeforeRequest.addListener(
-      listener,
-      { urls: ['*://*/laboratory-fake-csp-report'] },
-      ['blocking', 'requestBody']);
-
-    // and track it too
-    this.listeners.push({
-      event: browser.webRequest.onBeforeRequest,
-      listener,
-    });
-
-    console.log('Laboratory monitoring the following URLs:', urls.join(', '));
-  }
-
-
-  clearListeners() {
-    while (this.listeners.length > 0) {
-      const l = this.listeners.pop();
-      l.event.removeListener(l.listener);
-    }
   }
 
 
@@ -225,6 +200,13 @@ lab.getLocalState().then(state => lab.setState(state)).then(() => {
   Object.assign(window, {
     Lab: lab,
   });
+
+  // we don't add/remove the ingester, simply because if it was in the midst of being
+  // toggled, it would send fake 404 requests to sites accidentally
+  browser.webRequest.onBeforeRequest.addListener(
+    (request) => lab.ingestCspReport(request),
+    { urls: ['*://*/laboratory-fake-csp-report'] },
+    ['blocking', 'requestBody']);
 
   lab.init();
 });
