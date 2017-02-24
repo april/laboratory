@@ -150,8 +150,8 @@ class Lab {
         const hosts = this.state.config.hosts;
         const records = this.state.records;
 
-        // if it isn't a monitored url, let's just bail
-        if (!hosts.includes(host)) {
+        // if it isn't a monitored url or it's an incognito tab, let's just bail
+        if (!hosts.includes(host) || t.incognito) {
           return reject(false);
         }
 
