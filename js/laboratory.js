@@ -97,7 +97,7 @@ class Lab {
       listener,
     });
 
-    // add the listener to ingest the fake CSP reports
+    // add the listener to ingest the fake CSP reports  TODO: make this on startup, don't add/remove it
     listener = request => this.ingestCspReport(request);
     browser.webRequest.onBeforeRequest.addListener(
       listener,
@@ -166,7 +166,7 @@ class Lab {
       const report = JSON.parse(decoder.decode(request.requestBody.raw[0].bytes))['csp-report'];
       const directive = report['violated-directive'].split(' ')[0];
       const host = Lab.extractHostname(report['document-uri']);
-      const uri = report['blocked-uri'];
+      let uri = report['blocked-uri'];
 
       // catch the special cases (data, unsafe)
       switch (uri) {
