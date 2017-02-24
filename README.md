@@ -7,9 +7,9 @@ Laboratory is an experimental Firefox extension that helps you generate a proper
 
 It currently requires at least Firefox 53.  This means that it currently works with Firefox Developer Edition and Nightly, and should work with release once it reaches version 53.
 
-## Developing and Installing locally
+## Developing and Installing Locally
 
-It is recommend that developers use [web-ext](https://github.com/mozilla/web-ext) for installation and testing.  It provides a number of useful features, such as automated installation and autoreload upon source changes.
+It is recommend that developers use [web-ext](https://github.com/mozilla/web-ext) for installation and testing.  It provides a number of useful features, such as automated installation and autoreload upon source changes:
 
 ```bash
 $ web-ext -s src
