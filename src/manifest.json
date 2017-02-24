@@ -1,10 +1,20 @@
 {
   "manifest_version": 2,
   "name": "Laboratory by Mozilla",
-  "version": "1.0",
+  "short_name": "Laboratory",
+  "version": "1.0.2",
 
   "description": "Because good website security shouldn't only be available to mad scientists!",
   "homepage_url": "https://github.com/marumari/laboratory",
+  "developer": {
+    "name": "April King",
+    "url": "https://pokeinthe.io/"
+  },
+
+  "icons": {
+    "48": "img/vial.svg",
+    "96": "img/vial.svg"
+  },
 
   "applications": {
     "gecko": {
