@@ -1,4 +1,5 @@
-const buildCSP = (host) => {
+// TODO: move this into Lab
+const buildCSP = host => {
   const a = document.createElement('a');
   let csp = 'default-src \'none\';';
   let directive;
@@ -24,12 +25,12 @@ const buildCSP = (host) => {
     return csp.slice(0, -1);
   }
 
-  Object.entries(records[host]).forEach((entry) => {
+  Object.entries(records[host]).forEach(entry => {
     directive = entry[0];
     sources = entry[1];
 
     // now we need to iterate over each source and munge it
-    sources.forEach((source) => {
+    sources.forEach(source => {
       let mungedSource;
       a.href = source;
 
@@ -65,7 +66,6 @@ const buildCSP = (host) => {
           break;
       }
 
-
       // if it's a special case, we don't do processing
       if (['\'unsafe-eval\'', '\'unsafe-inline\'', 'data:'].includes(source)) {
         mungedSource = source;
@@ -80,7 +80,7 @@ const buildCSP = (host) => {
 
 
   // compile together a new CSP policy
-  Object.keys(shadowCSP).sort().forEach((key) => {
+  Object.keys(shadowCSP).sort().forEach(key => {
     directive = key;
     sources = shadowCSP[directive].sort();
 
@@ -141,7 +141,7 @@ const insertCSP = () => {
 };
 
 
-const determineToggleState = (host) => {  // TODO: make this more generic
+const determineToggleState = host => {  // TODO: make this more generic
   // get the list of current hosts and set the toggle to on if it's in there
   return new Promise((resolve, reject) => {
     const hosts = window.Lab.state.config.hosts;
@@ -191,7 +191,7 @@ const toggleRecord = function toggleRecord(host, enable) {
 
 
 /* bind to our backend window object */
-browser.runtime.getBackgroundPage().then((winder) => {
+browser.runtime.getBackgroundPage().then(winder => {
   window.Lab = winder.Lab;
 });
 
@@ -199,11 +199,11 @@ browser.runtime.getBackgroundPage().then((winder) => {
 /* set up our event listeners */
 document.addEventListener('DOMContentLoaded', () => {
   // retrieve a site's active status and check the box if its active
-  getCurrentTabHost().then(host => determineToggleState(host)).then((state) => {
+  getCurrentTabHost().then(host => determineToggleState(host)).then(state => {
     $('#toggle-csp-record').prop('checked', state);
   }).then(() => {
     // set a listener for toggling for a site
-    $('#toggle-csp-record').change((event) => {
+    $('#toggle-csp-record').change(event => {
       getCurrentTabHost().then(host => {
         toggleRecord(host, event.target.checked);
         window.Lab.writeLocalState().then(() => insertCSP());
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-trash').addEventListener('click', () => {
     window.Lab.clearState();
 
-    window.Lab.writeLocalState().then((state) => {
+    window.Lab.writeLocalState().then(() => {
       $('#toggle-csp-record').prop('checked', false);  // unset checkbox
       window.Lab.init();
       insertCSP();

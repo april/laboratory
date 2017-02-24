@@ -21,6 +21,7 @@ class Lab {
 
     // hoist static functions or something
     this.extractHostname = Lab.extractHostname;
+    this.typeMapping = Lab.typeMapping;
     this.unmonitorableSites = Lab.unmonitorableSites;
   }
 
@@ -32,13 +33,17 @@ class Lab {
   }
 
 
-  static get strictnessDefs() {
+  static get typeMapping() {
     return {
-      directory: 'Directory',
-      origin: '\'self\' if same origin, otherwise origin',
-      path: 'Full path to resource',
-      'self-if-same-origin-else-directory': '\'self\' if same origin, otherwise directory',
-      'self-if-same-origin-else-path': '\'self\' if same origin, otherwise full path',
+      font: 'font-src',
+      image: 'img-src',
+      media: 'media-src',
+      object: 'object-src',
+      other: 'connect-src',  // fetch?
+      script: 'script-src',
+      stylesheet: 'style-src',
+      sub_frame: 'frame-src',
+      xmlhttprequest: 'connect-src',
     };
   }
 
@@ -54,8 +59,9 @@ class Lab {
 
   siteTemplate() {
     const site = {};
-    Object.keys(this.defaultState().config.strictness).map((x) => {
+    Object.keys(this.defaultState().config.strictness).map(x => {
       site[x] = [];  // TODO: convert to Set once localforage supports it
+      return undefined;
     });
 
     return site;
@@ -64,7 +70,19 @@ class Lab {
 
   init() {
     const hosts = this.state.config.hosts;
-    let listener;
+    // we create a listeners here to inject CSPRO headers
+    // we define it globally so that we don't have to keep recreating anonymous functions,
+    // which has the side effect of making it much easier to remove the listener
+    if (this.onHeadersReceivedListener === undefined) {
+      this.onHeadersReceivedListener = request => this.injectCspReportOnlyHeader(request);
+      this.onResponseStartedListener = request => this.responseMonitor(request);
+    }
+
+    // delete the old listeners, if we're listening
+    if (browser.webRequest.onHeadersReceived.hasListener(this.onHeadersReceivedListener)) {
+      browser.webRequest.onHeadersReceived.removeListener(this.onHeadersReceivedListener);
+      browser.webRequest.onResponseStarted.removeListener(this.onResponseStartedListener);
+    }
 
     // we don't need to add any listeners if we're not yet monitoring any hosts
     if (hosts === null) { return; }
@@ -78,25 +96,20 @@ class Lab {
       urls.push(`https://${host}/*`);
     }
 
-    // we create a listener here to inject CSPRO headers
-    // we define it globally so that we don't have to keep recreating anonymous functions,
-    // which has the side effect of making it much easier to remove the listener
-    if (this.onHeadersReceivedListener === undefined) {
-      this.onHeadersReceivedListener = (request) => this.injectCspReportOnlyHeader(request);
-    } else {
-      // delete the old listener
-      browser.webRequest.onHeadersReceived.removeListener(this.onHeadersReceivedListener);
-    }
-
     browser.webRequest.onHeadersReceived.addListener(
       this.onHeadersReceivedListener,
       { urls },
       ['blocking', 'responseHeaders']);
+
+    // TODO: make this more efficient?  Perhaps only listen if a tab is in hosts?
+    browser.webRequest.onResponseStarted.addListener(
+      this.onResponseStartedListener,
+      { urls: ['http://*/*', 'https://*/*', 'ftp://*/*'] });
   }
 
 
   clearState() {
-    console.log('Laboratory: Clearing all local storage', this.listeners);
+    console.log('Laboratory: Clearing all local storage');
     this.state = this.defaultState();
   }
 
@@ -108,7 +121,7 @@ class Lab {
         return resolve(this.state);
       }
 
-      localforage.getItem('state').then((state) => {
+      localforage.getItem('state').then(state => {
         if (state === null) {
           return resolve(this.defaultState());
         }
@@ -126,6 +139,55 @@ class Lab {
 
   writeLocalState() {
     return localforage.setItem('state', this.state);
+  }
+
+
+  responseMonitor(details) {
+    return new Promise((resolve, reject) => {
+      // get the hostname of the subresource via its tabId
+      browser.tabs.get(details.tabId).then(t => {
+        const host = Lab.extractHostname(t.url);
+        const hosts = this.state.config.hosts;
+        const records = this.state.records;
+
+        // if it isn't a monitored url, let's just bail
+        if (!hosts.includes(host)) {
+          return reject(false);
+        }
+
+        // ignore requests that are for things that CSP doesn't deal with  --> other: fetch?
+        if (['main_frame', 'beacon', 'csp_report', 'other'].includes(details.type)) {
+          return reject(false);
+        }
+
+        // for requests that have a frameId (eg iframes), we only want to record them if they're
+        // a sub_frame request; all of the frame's resources are sandboxed as far as CSP goes
+        if (details.frameId !== 0 && details.type !== 'sub_frame') {
+          return reject(false);
+        }
+
+        // and store the url
+        const a = document.createElement('a');
+        a.href = details.url;
+
+        // throw an error to the console if we see a request type that we don't know
+        if (!(details.type in Lab.typeMapping)) {
+          console.error('Error: Unknown request type encountered', details);
+          reject(false);
+        }
+
+        // add the host to the records, if it's not already there
+        if (!(host in records)) {
+          records[host] = this.siteTemplate();
+        }
+
+        // add the item to the records that we've seen
+        records[host][this.typeMapping[details.type]].push(a.origin + a.pathname);
+        resolve(true);
+      });
+
+      resolve(true);
+    });
   }
 
 
@@ -179,10 +241,10 @@ class Lab {
         }
       }
 
-      // push a response header onto the stack to block all requests in report only mode
+      // push a response header onto the stack to block all non-network requests in report only mode
       request.responseHeaders.push({
         name: 'Content-Security-Policy-Report-Only',
-        value: 'default-src \'none\'; connect-src \'none\'; font-src \'none\'; frame-src \'none\'; img-src \'none\'; media-src \'none\'; object-src \'none\'; script-src \'none\'; style-src \'none\'; report-uri /laboratory-fake-csp-report',
+        value: 'default-src \'none\'; connect-src http: https: ftp:; font-src http: https: ftp:; frame-src http: https: ftp:; img-src http: https: ftp:; media-src http: https: ftp:; object-src http: https: ftp:; script-src http: https: ftp:; style-src http: https: ftp:; report-uri /laboratory-fake-csp-report',
       });
 
       return resolve({ responseHeaders: request.responseHeaders });
@@ -202,7 +264,7 @@ lab.getLocalState().then(state => lab.setState(state)).then(() => {
   // we don't add/remove the ingester, simply because if it was in the midst of being
   // toggled, it would send fake 404 requests to sites accidentally
   browser.webRequest.onBeforeRequest.addListener(
-    (request) => lab.ingestCspReport(request),
+    request => lab.ingestCspReport(request),
     { urls: ['*://*/laboratory-fake-csp-report'] },
     ['blocking', 'requestBody']);
 
