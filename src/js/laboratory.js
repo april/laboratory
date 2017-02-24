@@ -37,6 +37,7 @@ class Lab {
     return {
       font: 'font-src',
       image: 'img-src',
+      imageset: 'img-src',
       media: 'media-src',
       object: 'object-src',
       other: 'connect-src',  // fetch?
