@@ -65,6 +65,7 @@ class Lab {
 
 
   init() {
+    console.log('inside init, this.state is', JSON.stringify(this.state));
     const hosts = this.state.config.hosts;
     let listener;
 
@@ -122,6 +123,7 @@ class Lab {
   clearState() {
     console.log('Laboratory: Clearing all local storage');
     this.state = Object.assign({}, this.defaultState);
+    console.log('in clearstate, this.state is now', this.state, this.defaultState);
   }
 
 
