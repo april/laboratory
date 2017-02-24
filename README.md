@@ -5,7 +5,7 @@ Laboratory is an experimental Firefox extension that helps you generate a proper
 
 ![Preview Image](https://i.imgur.com/dKnWrgK.png)
 
-It currently requires at least Firefox 53, so works with Dev Edition and should work with Firefox release once version 53 is released.
+It currently requires at least Firefox 53.  This means that it currently works with Firefox Developer Edition and Nightly, and should work with release once it reaches version 53.
 
 ## Developing and Installing locally
 
