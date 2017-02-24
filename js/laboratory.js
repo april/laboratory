@@ -1,20 +1,22 @@
 class Lab {
   constructor() {
-    this.defaultState = {
-      config: {
-        hosts: [],  // list of hosts to monitor
-        strictness: {
-          'connect-src': 'self-if-same-origin-else-path',
-          'font-src': 'origin',
-          'frame-src': 'origin',
-          'img-src': 'origin',
-          'media-src': 'origin',
-          'object-src': 'path',
-          'script-src': 'self-if-same-origin-else-path',
-          'style-src': 'self-if-same-origin-else-directory',
+    this.defaultState = () => {
+      return {
+        config: {
+          hosts: [],  // list of hosts to monitor
+          strictness: {
+            'connect-src': 'self-if-same-origin-else-path',
+            'font-src': 'origin',
+            'frame-src': 'origin',
+            'img-src': 'origin',
+            'media-src': 'origin',
+            'object-src': 'path',
+            'script-src': 'self-if-same-origin-else-path',
+            'style-src': 'self-if-same-origin-else-directory',
+          },
         },
-      },
-      records: {},  // hosts -> sources mapping
+        records: {},  // hosts -> sources mapping
+      }
     };
 
     this.listeners = [];
@@ -55,9 +57,8 @@ class Lab {
 
   siteTemplate() {
     const site = {};
-    Object.keys(this.defaultState.config.strictness).map((x) => {
+    Object.keys(this.defaultState().config.strictness).map((x) => {
       site[x] = [];  // TODO: convert to Set once localforage supports it
-      // return undefined;
     });
 
     return site;
@@ -65,7 +66,6 @@ class Lab {
 
 
   init() {
-    console.log('inside init, this.state is', JSON.stringify(this.state));
     const hosts = this.state.config.hosts;
     let listener;
 
@@ -121,9 +121,8 @@ class Lab {
 
 
   clearState() {
-    console.log('Laboratory: Clearing all local storage');
-    this.state = Object.assign({}, this.defaultState);
-    console.log('in clearstate, this.state is now', this.state, this.defaultState);
+    console.log('Laboratory: Clearing all local storage', this.listeners);
+    this.state = this.defaultState();
   }
 
 
@@ -136,7 +135,7 @@ class Lab {
 
       localforage.getItem('state').then((state) => {
         if (state === null) {
-          return resolve(Object.assign({}, this.defaultState));
+          return resolve(this.defaultState());
         }
 
         return resolve(state);

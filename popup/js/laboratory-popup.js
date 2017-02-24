@@ -224,17 +224,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-trash').addEventListener('click', () => {
     window.Lab.clearListeners();
     window.Lab.clearState();
-    // console.log('state here is', window.Lab.state);
-
-    console.log('Window.Lab.state in popup -> clicklistener, before wls, after clearState(),  is', JSON.stringify(window.Lab.state));
 
     window.Lab.writeLocalState().then((state) => {
       $('#toggle-csp-record').prop('checked', false);  // unset checkbox
-      console.log('setting window.Lab.state.foo -> baz');
-      window.Lab.state.foo = 'baz';
-      console.log('Window.Lab.state in popup -> writelocalstorage is', JSON.stringify(window.Lab.state));
       window.Lab.init();
-      // console.log('state here is', window.Lab.state);
       insertCSP();
       insertCspConfig();
     });
