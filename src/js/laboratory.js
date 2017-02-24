@@ -44,7 +44,10 @@ class Lab {
       script: 'script-src',
       stylesheet: 'style-src',
       sub_frame: 'frame-src',
+      websocket: 'connect-src',
+      xbl: 'style-src',
       xmlhttprequest: 'connect-src',
+      xslt: 'style-src',
     };
   }
 
