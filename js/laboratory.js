@@ -35,7 +35,7 @@ class Lab {
   static get strictnessDefs() {
     return {
       directory: 'Directory',
-      origin: 'Origin',
+      origin: '\'self\' if same origin, otherwise origin',
       path: 'Full path to resource',
       'self-if-same-origin-else-directory': '\'self\' if same origin, otherwise directory',
       'self-if-same-origin-else-path': '\'self\' if same origin, otherwise full path',
@@ -65,8 +65,6 @@ class Lab {
   init() {
     const hosts = this.state.config.hosts;
     let listener;
-
-
 
     // we don't need to add any listeners if we're not yet monitoring any hosts
     if (hosts === null) { return; }
