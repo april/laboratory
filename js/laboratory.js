@@ -115,8 +115,10 @@ class Lab {
 
 
   clearListeners() {
-    this.listeners.forEach(l => l.event.removeListener(l.listener));
-    this.listeners = [];
+    while (this.listeners.length > 0) {
+      const l = this.listeners.pop();
+      l.event.removeListener(l.listener);
+    }
   }
 
 
