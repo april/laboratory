@@ -121,8 +121,7 @@ class Lab {
 
   clearState() {
     console.log('Laboratory: Clearing all local storage');
-    // return localforage.clear();
-    this.state = this.defaultState;
+    this.state = Object.assign({}, this.defaultState);
   }
 
 
@@ -135,7 +134,7 @@ class Lab {
 
       localforage.getItem('state').then((state) => {
         if (state === null) {
-          return resolve(this.defaultState);
+          return resolve(Object.assign({}, this.defaultState));
         }
 
         return resolve(state);
