@@ -12,7 +12,7 @@ It currently requires at least Firefox 53.  This means that it currently works w
 It is recommend that developers use [web-ext](https://github.com/mozilla/web-ext) for installation and testing.  It provides a number of useful features, such as automated installation and autoreload upon source changes:
 
 ```bash
-$ web-ext run -s src
+$ web-ext run -s src --ignore-files 'img/*.afdesign'
 ```
 
 If you are simply looking to give it a single run, you can install it by navigating to:
