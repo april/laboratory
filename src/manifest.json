@@ -2,13 +2,13 @@
   "manifest_version": 2,
   "name": "Laboratory",
   "short_name": "Laboratory",
-  "version": "1.0.4",
+  "version": "1.0.5",
 
   "description": "Because good website security shouldn't only be available to mad scientists!",
-  "homepage_url": "https://github.com/marumari/laboratory",
+  "homepage_url": "https://github.com/april/laboratory",
   "developer": {
     "name": "April King",
-    "url": "https://github.com/marumari/laboratory"
+    "url": "https://github.com/april/laboratory"
   },
 
   "icons": {
