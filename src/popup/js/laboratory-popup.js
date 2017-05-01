@@ -17,12 +17,18 @@ const buildCSP = host => {
 
   // a handful of sites are completely immune to extensions that do the sort of thing we're doing
   if (window.Lab.unmonitorableSites.includes(host)) {
-    return '😭  Security controls prevent monitoring  😭';
+    return {
+      text: '😭  Security controls prevent monitoring  😭',
+      records: shadowCSP,
+    };
   }
 
   // if it's a host we don't have records for, let's just return default-src 'none'
   if (!(host in records)) {
-    return csp.slice(0, -1);
+    return {
+      text: csp.slice(0, -1),
+      records: shadowCSP,
+    };
   }
 
   Object.entries(records[host]).forEach(entry => {
@@ -90,7 +96,11 @@ const buildCSP = host => {
   });
 
   // return our resolved CSP without the trailing semicolon
-  return csp.slice(0, -1);
+  // also return the shadow CSP if needed
+  return {
+    text: csp.slice(0, -1),
+    records: shadowCSP,
+  };
 };
 
 
@@ -135,8 +145,23 @@ const writeConfig = () => {
 
 const insertCSP = () => {
   // get the host for the current tab and then insert its CSP
-  getCurrentTabHost().then((host) => {
-    document.getElementById('csp-record').textContent = buildCSP(host);
+  getCurrentTabHost().then(host => {
+    const builtCSP = buildCSP(host);
+
+    document.getElementById('csp-record').textContent = builtCSP.text;
+
+    // TODO: make sure things are clear if you're using unsafe-inline
+    if ('script-src' in builtCSP.records) {
+      if (builtCSP.records['script-src'].includes('\'unsafe-inline\'') ||
+          builtCSP.records['script-src'].includes('data:')) {
+        // make the column look scary
+        document.getElementById('csp-col').classList.add('alert-danger');
+        document.getElementById('csp-row-unsafe-inline-warning').classList.remove('hidden');
+      } else {
+        document.getElementById('csp-col').classList.remove('alert-danger');
+        document.getElementById('csp-row-unsafe-inline-warning').classList.add('hidden');
+      }
+    }
   });
 };
 

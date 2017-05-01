@@ -24,6 +24,18 @@ hr {
   padding: 9.5px;
 }
 
+#csp-col.alert-danger {
+  background-color: #eed3d7;
+  border-color: #b94a48;
+}
+
+#csp-row-unsafe-inline-warning {
+  font-weight: 600;
+  margin-bottom: -10px;
+  margin-top: 15px;
+  padding-left: 5px;
+}
+
 #csp-col-header {
   margin-bottom: 10px;
 }
