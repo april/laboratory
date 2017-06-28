@@ -16,11 +16,12 @@ class Lab {
           },
         },
         records: {},  // hosts -> sources mapping
-      }
+      };
     };
 
     // hoist static functions or something
     this.extractHostname = Lab.extractHostname;
+    this.removeHttpHeaders = Lab.removeHttpHeaders;
     this.typeMapping = Lab.typeMapping;
     this.unmonitorableSites = Lab.unmonitorableSites;
   }
@@ -30,6 +31,22 @@ class Lab {
     const a = document.createElement('a');
     a.href = url;
     return a.host;
+  }
+
+  static removeHttpHeaders(headers, headersToRemove) {
+    // lower case the headers to remove
+    const headersToRemoveL = headersToRemove.map(h => h.toLowerCase());
+
+    // remove a list of response headers from a request object
+    let i = headers.length;
+    while (i > 0) {
+      i -= 1;
+      if (headersToRemoveL.includes(headers[i].name.toLowerCase())) {
+        headers.splice(i, 1);
+      }
+    }
+
+    return headers;
   }
 
 
@@ -236,13 +253,22 @@ class Lab {
 
   injectCspReportOnlyHeader(request) {
     return new Promise((resolve, reject) => {
-      // todo: remove an existing CSP
-      let i = request.responseHeaders.length;
-      while (i > 0) {
-        i -= 1;
-        if (['content-security-policy', 'content-security-policy-report-only'].includes(request.responseHeaders[i].name.toLowerCase())) {
-          request.responseHeaders.splice(i, 1);
-        }
+      // Remove any existing CSP directives
+      Lab.removeHttpHeaders(request.responseHeaders, ['content-security-policy', 'content-security-policy-report-only']);
+
+      // prevent CSP header caching due to the Firefox extension architecture
+      if (request.documentUrl === undefined) {
+        Lab.removeHttpHeaders(request.responseHeaders, ['cache-control', 'expires']);
+
+        request.responseHeaders.push({
+          name: 'Cache-Control',
+          value: 'no-cache, no-store, must-revalidate',
+        });
+
+        request.responseHeaders.push({
+          name: 'Expires',
+          value: new Date().toUTCString(),
+        });
       }
 
       // push a response header onto the stack to block all non-network requests in report only mode
