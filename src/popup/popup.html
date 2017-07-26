@@ -14,8 +14,13 @@
       <div class="panel-body">
         <div>
           <label class="checkbox-inline" for="toggle-csp-record">
-            <input id="toggle-csp-record" data-on="Yes" data-onstyle="success" data-off="No" data-offstyle="danger" data-toggle="toggle" data-size="mini" type="checkbox">
-            Record this Site (will disable existing CSP while recording)
+            <input class="csp-toggle" id="toggle-csp-record" data-on="Yes" data-onstyle="success" data-off="No" data-offstyle="danger" data-toggle="toggle" data-size="mini" type="checkbox">
+            Record this site (will disable existing CSP while recording)
+          </label>
+          <br>
+          <label class="checkbox-inline" for="toggle-csp-enforcement">
+            <input class="csp-toggle" id="toggle-csp-enforcement" data-on="Yes" data-onstyle="success" data-off="No" data-offstyle="danger" data-toggle="toggle" data-size="mini" type="checkbox">
+            Enforce generated CSP policy
           </label>
         </div>
 
@@ -35,7 +40,7 @@
             <div id="csp-row-unsafe-inline-warning" class="col-xs-12 hidden">
               <p>
                 <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-                Generated CSP uses <code>'unsafe-inline'</code> or <code>data:</code> inside <code>script-src</code>.
+                Generated CSP uses <code>'unsafe-inline'</code> or <code>data:</code> inside <code>script-src</code>.<br><span id="csp-row-unsafe-inline-warning-indent">Consider using <code>nonce-source</code> or <code>hash-source</code>.</span>
               </p>
             </div>
           </div>

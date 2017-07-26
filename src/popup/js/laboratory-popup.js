@@ -1,109 +1,3 @@
-// TODO: move this into Lab
-const buildCSP = host => {
-  const a = document.createElement('a');
-  let csp = 'default-src \'none\';';
-  let directive;
-  let path;
-  let sources;
-
-  // build the CSP based on the strictness settings set
-  const strictness = window.Lab.state.config.strictness;
-
-  // first, we need to construct a shadow CSP that contains directives by strictness
-  const shadowCSP = window.Lab.siteTemplate();
-
-  // get the record for our host
-  const records = window.Lab.state.records;
-
-  // a handful of sites are completely immune to extensions that do the sort of thing we're doing
-  if (window.Lab.unmonitorableSites.includes(host)) {
-    return {
-      text: '😭  Security controls prevent monitoring  😭',
-      records: shadowCSP,
-    };
-  }
-
-  // if it's a host we don't have records for, let's just return default-src 'none'
-  if (!(host in records)) {
-    return {
-      text: csp.slice(0, -1),
-      records: shadowCSP,
-    };
-  }
-
-  Object.entries(records[host]).forEach(entry => {
-    directive = entry[0];
-    sources = entry[1];
-
-    // now we need to iterate over each source and munge it
-    sources.forEach(source => {
-      let mungedSource;
-      a.href = source;
-
-      switch (strictness[directive]) {
-        case 'origin':
-          if (a.host === host) {
-            mungedSource = '\'self\'';
-          } else {
-            mungedSource = a.origin;
-          }
-          break;
-        case 'self-if-same-origin-else-directory':
-          if (a.host === host) {
-            mungedSource = '\'self\'';
-            break;
-          }
-          // falls through
-        case 'directory':
-          path = a.pathname.split('/');
-          path.pop();
-          mungedSource = `${a.origin}${path.join('/')}/`;
-          break;
-        case 'self-if-same-origin-else-path':
-          if (a.host === host) {
-            mungedSource = '\'self\'';
-            break;
-          }
-          // falls through
-        case 'path':
-          mungedSource = a.href;
-          break;
-        default:
-          break;
-      }
-
-      // if it's a special case, we don't do processing
-      if (['\'unsafe-eval\'', '\'unsafe-inline\'', 'data:'].includes(source)) {
-        mungedSource = source;
-      }
-
-      // now we simply add the entry to the shadowCSP, if it's not already there
-      if (!shadowCSP[directive].includes(mungedSource)) {
-        shadowCSP[directive].push(mungedSource);
-      }
-    });
-  });
-
-
-  // compile together a new CSP policy
-  Object.keys(shadowCSP).sort().forEach(key => {
-    directive = key;
-    sources = shadowCSP[directive].sort();
-
-    if (sources.length > 0) {
-      csp = `${csp} ${directive} ${sources.join(' ')};`;
-    }
-  });
-
-  // return our resolved CSP without the trailing semicolon
-  // also return the shadow CSP if needed
-  return {
-    text: csp.slice(0, -1),
-    records: shadowCSP,
-  };
-};
-
-
 const getCurrentTabHost = () => {
   return new Promise((resolve, reject) => {
     browser.tabs.query({
@@ -143,10 +37,10 @@ const writeConfig = () => {
 };
 
 
-const insertCSP = () => {
+const insertCsp = () => {
   // get the host for the current tab and then insert its CSP
   getCurrentTabHost().then(host => {
-    const builtCSP = buildCSP(host);
+    const builtCSP = Lab.buildCsp(host);
 
     document.getElementById('csp-record').textContent = builtCSP.text;
 
@@ -175,19 +69,16 @@ const insertRecordingCount = () => {
 const determineToggleState = host => {  // TODO: make this more generic
   // get the list of current hosts and set the toggle to on if it's in there
   return new Promise((resolve, reject) => {
-    const hosts = window.Lab.state.config.hosts;
-
-    if (hosts.includes(host)) {
-      return resolve(true);
-    }
-
-    return resolve(false);
+    return resolve({
+      'toggle-csp-record': window.Lab.state.config.hosts.includes(host),
+      'toggle-csp-enforcement': window.Lab.state.config.enforcedHosts.includes(host),
+    });
   });
 };
 
 
-const toggleRecord = function toggleRecord(host, enable) {
-  const hosts = window.Lab.state.config.hosts;
+const toggleRecord = function toggleRecord(configRecord, host, enable) {
+  const record = window.Lab.state.config[configRecord];
   const records = window.Lab.state.records;
 
   // lets bail if you try to toggle the host on a weird thing (like moz-extension://)
@@ -197,24 +88,26 @@ const toggleRecord = function toggleRecord(host, enable) {
   // if it's not in the hosts list + disable -> move on
   // this shouldn't happen, but we're guarding against it anyways
   // also wtf does es6 not have a true logical xor operator?
-  if ((hosts.includes(host)) ^ !enable) {
+  if ((record.includes(host)) ^ !enable) {
     console.error('Unexpected toggling for site encountered');
     return;
   }
 
   if (enable) {
-    hosts.push(host);
+    record.push(host);
   } else {
     // remove it from the list of monitored sites
-    const i = hosts.indexOf(host);
-    hosts.splice(i, 1);
+    const i = record.indexOf(host);
+    record.splice(i, 1);
 
 
-    // remove any records for a site, if we have any
-    if (host in records) {
+    // remove any previous records for a site, if we have any
+    if ((host in records) && (configRecord === 'hosts')) {
       delete records[host];
     }
   }
+
+  console.log('state is', window.Lab.state);
 
   // now we reinitialize the listeners
   window.Lab.init();
@@ -233,21 +126,31 @@ document.addEventListener('DOMContentLoaded', () => {
   insertRecordingCount();
 
   // retrieve a site's active status and check the box if its active
-  getCurrentTabHost().then(host => determineToggleState(host)).then(state => {
-    $('#toggle-csp-record').prop('checked', state);
+  getCurrentTabHost().then(host => determineToggleState(host)).then(toggles => {
+    Object.entries(toggles).forEach(([toggleId, toggled]) => {
+      $(`#${toggleId}`).prop('checked', toggled);
+    });
   }).then(() => {
-    // set a listener for toggling for a site
+    // set a listener for toggling recording for a site
     $('#toggle-csp-record').change(event => {
       getCurrentTabHost().then(host => {
-        toggleRecord(host, event.target.checked);
+        toggleRecord('hosts', host, event.target.checked);
         insertRecordingCount();
-        window.Lab.writeLocalState().then(() => insertCSP());
+        window.Lab.writeLocalState().then(() => insertCsp());
+      });
+    });
+
+    // there's no listener for enforcement, it simply changes how it's implemented
+    $('#toggle-csp-enforcement').change(event => {
+      getCurrentTabHost().then(host => {
+        toggleRecord('enforcedHosts', host, event.target.checked);
+        window.Lab.writeLocalState().then();
       });
     });
   });
 
   // display the current CSP if we have one
-  insertCSP();
+  insertCsp();
 
   // insert the config pulldowns
   insertCspConfig();
@@ -260,10 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.Lab.clearState();
 
     window.Lab.writeLocalState().then(() => {
-      $('#toggle-csp-record').prop('checked', false);  // unset checkbox
+      $('.csp-toggle').prop('checked', false);  // unset all CSP checkboxes
       window.Lab.init();
       insertRecordingCount();
-      insertCSP();
+      insertCsp();
       insertCspConfig();
     });
   });
@@ -272,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // bind a listener for every time we change a config setting, TODO: make this more generic
   document.getElementById('csp-config').addEventListener('change', () => {
     writeConfig().then(() => {
-      window.Lab.writeLocalState().then(() => insertCSP());
+      window.Lab.writeLocalState().then(() => insertCsp());
     });
   });
 });
