@@ -3,8 +3,9 @@ class Lab {
     this.defaultState = () => {
       return {
         config: {
-          enforcedHosts: [],
-          hosts: [],  // list of hosts to monitor
+          customCspHosts: {}, // list of hosts where CSP is manually overridden
+          enforcedHosts: [],  // list of hosts we are enforcing the generate CSP policy on
+          recordingHosts: [], // list of hosts to record
           strictness: {
             'connect-src': 'self-if-same-origin-else-path',
             'font-src': 'origin',
@@ -78,6 +79,17 @@ class Lab {
     ];
   }
 
+  // get the list of all monitored sites in one way or another
+  getActiveHosts() {
+    const hosts = new Set([].concat(
+          Object.keys(this.state.config.customCspHosts),
+          this.state.config.enforcedHosts,
+          this.state.config.recordingHosts,
+    ));
+
+    return hosts;
+  }
+
 
   siteTemplate() {
     const site = {};
@@ -91,7 +103,8 @@ class Lab {
 
 
   init() {
-    const hosts = this.state.config.hosts;
+    const hosts = this.getActiveHosts();
+
     // we create a listeners here to inject CSPRO headers
     // we define it globally so that we don't have to keep recreating anonymous functions,
     // which has the side effect of making it much easier to remove the listener
@@ -108,7 +121,7 @@ class Lab {
 
     // we don't need to add any listeners if we're not yet monitoring any hosts
     if (hosts === null) { return; }
-    if (hosts.length === 0) { return; }
+    if (hosts.size === 0) { return; }
 
     // listen for all requests and inject a CSPRO header
     const urls = [];
@@ -186,13 +199,11 @@ class Lab {
       // get the hostname of the subresource via its tabId
       browser.tabs.get(details.tabId).then(t => {
         const host = Lab.extractHostname(t.url);
-        const hosts = this.state.config.hosts;
+        const hosts = this.getActiveHosts();
         const records = this.state.records;
 
-        // if it isn't a monitored url, we're enforcing, or it's an incognito tab, let's just bail
-        if (!hosts.includes(host) ||
-          this.state.config.enforcedHosts.includes(host) ||
-          t.incognito) {
+        // if it isn't a monitored/enforced, or it's an incognito tab, let's just bail
+        if (!hosts.has(host) || t.incognito) {
           return reject(false);
         }
 

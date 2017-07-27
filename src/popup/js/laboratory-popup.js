@@ -23,63 +23,46 @@ const insertCspConfig = () => {
 };
 
 
-const writeConfig = () => {
-  return new Promise((resolve, reject) => {
-    const strictness = window.Lab.state.config.strictness;
+const writeStrictnessToState = () => {
+  const strictness = window.Lab.state.config.strictness;
 
-    // read in all the CSP config settings
-    for (const row of document.getElementsByClassName('csp-form-control')) {
-      strictness[row.getAttribute('data-directive')] = row.value;
-    }
-
-    resolve(strictness);
-  });
+  // read in all the CSP config settings
+  for (const row of document.getElementsByClassName('csp-form-control')) {
+    strictness[row.getAttribute('data-directive')] = row.value;
+  }
 };
 
 
-const insertCsp = () => {
+const insertCsp = host => {
   // get the host for the current tab and then insert its CSP
-  getCurrentTabHost().then(host => {
-    const builtCSP = Lab.buildCsp(host);
+  const builtCSP = Lab.buildCsp(host);
 
-    document.getElementById('csp-record').textContent = builtCSP.text;
+  document.getElementById('csp-record').textContent = builtCSP.text;
 
-    // TODO: make sure things are clear if you're using unsafe-inline
-    if ('script-src' in builtCSP.records) {
-      if (builtCSP.records['script-src'].includes('\'unsafe-inline\'') ||
-          builtCSP.records['script-src'].includes('data:')) {
-        // make the column look scary
-        document.getElementById('csp-col').classList.add('alert-danger');
-        document.getElementById('csp-row-unsafe-inline-warning').classList.remove('hidden');
-      } else {
-        document.getElementById('csp-col').classList.remove('alert-danger');
-        document.getElementById('csp-row-unsafe-inline-warning').classList.add('hidden');
-      }
+  // TODO: make sure things are clear if you're using unsafe-inline
+  if ('script-src' in builtCSP.records) {
+    if (builtCSP.records['script-src'].includes('\'unsafe-inline\'') ||
+        builtCSP.records['script-src'].includes('data:')) {
+      // make the column look scary
+      document.getElementById('csp-col').classList.add('alert-danger');
+      document.getElementById('csp-row-unsafe-inline-warning').classList.remove('hidden');
+    } else {
+      document.getElementById('csp-col').classList.remove('alert-danger');
+      document.getElementById('csp-row-unsafe-inline-warning').classList.add('hidden');
     }
-  });
+  }
 };
 
 
 const insertRecordingCount = () => {
   // insert the proper count of how many sites are being recorded
-  document.getElementById('csp-recording-count').textContent = window.Lab.state.config.hosts.length.toString();
-};
-
-
-const determineToggleState = host => {  // TODO: make this more generic
-  // get the list of current hosts and set the toggle to on if it's in there
-  return new Promise((resolve, reject) => {
-    return resolve({
-      'toggle-csp-record': window.Lab.state.config.hosts.includes(host),
-      'toggle-csp-enforcement': window.Lab.state.config.enforcedHosts.includes(host),
-    });
-  });
+  document.getElementById('csp-recording-count').textContent = window.Lab.state.config.recordingHosts.length.toString();
 };
 
 
 const toggleRecord = function toggleRecord(configRecord, host, enable) {
   const record = window.Lab.state.config[configRecord];
-  const records = window.Lab.state.records;
+  const records = window.Lab.state.records;  // list of recorded URLs
 
   // lets bail if you try to toggle the host on a weird thing (like moz-extension://)
   if (!host) { return; }
@@ -107,10 +90,50 @@ const toggleRecord = function toggleRecord(configRecord, host, enable) {
     }
   }
 
-  console.log('state is', window.Lab.state);
-
   // now we reinitialize the listeners
   window.Lab.init();
+};
+
+
+const toggleToggler = (host, dependenciesOnly) => {
+  const states = {
+    enforced: window.Lab.state.config.enforcedHosts.includes(host),
+    recording: window.Lab.state.config.recordingHosts.includes(host),
+  };
+
+  if (!dependenciesOnly) {
+    Object.entries(states).forEach(([toggleId, toggled]) => {
+      $(`#csp-toggle-${toggleId}`).prop('checked', toggled);
+    });
+  }
+
+  // enable or disable recording, if enforcement is checked
+  $('#csp-toggle-recording').prop('disabled', states.enforced);
+
+  // if the host is undefined (such as on a blank tab, disable all toggles)
+  if (host === '') {
+    $('.csp-toggle').prop('disabled', true);
+  }
+};
+
+
+const toggleEvent = event => {
+  getCurrentTabHost().then(host => {
+    // get the toggle name
+    const toggleId = event.target.id.split('-').pop();
+
+    // toggle the correct record, based on its id
+    toggleRecord(`${toggleId}Hosts`, host, event.target.checked);
+
+    // update the number of sites we're recording
+    insertRecordingCount();
+
+    // set the toggle dependencies
+    toggleToggler(host, true);
+
+    // flush the changes to disk and then insert the current CSP
+    window.Lab.writeLocalState().then(() => insertCsp(host));
+  });
 };
 
 
@@ -120,62 +143,48 @@ browser.runtime.getBackgroundPage().then(winder => {
 });
 
 
-/* set up our event listeners */
+const handleDOMContentLoaded = (resetting = false) => {
+  getCurrentTabHost().then(host => {
+    // set the correct number of recorded hosts
+    insertRecordingCount();
+
+    if (!resetting) {  // we only want to do this when not recursing
+      // set events on all the togglers
+      $('.csp-toggle').on('change', toggleEvent);
+
+      // bind a listener for the trash icon to delete all records
+      $('#btn-trash').on('click', () => {
+        window.Lab.clearState();
+
+        window.Lab.writeLocalState().then(() => handleDOMContentLoaded(true));
+      });
+
+      // bind a listener for every time we change a config setting
+      // TODO: make this more generic
+      $('#csp-config').on('change', () => {
+        writeStrictnessToState();
+        Promise.all([window.Lab.writeLocalState(), getCurrentTabHost()]).then(args => {
+          insertCsp(args[1]);
+        });
+      });
+    }
+
+    // retrieve a site's active status and check the box if its active
+    toggleToggler(host);
+
+    // display the current CSP if we have one
+    insertCsp(host);
+
+    // insert the config pulldowns
+    insertCspConfig();
+
+    // initialize all our clipboards
+    const clipboard = new Clipboard('.btn');
+  });
+};
+
+
+// initialize the document
 document.addEventListener('DOMContentLoaded', () => {
-  // set the correct number of recorded hosts
-  insertRecordingCount();
-
-  // retrieve a site's active status and check the box if its active
-  getCurrentTabHost().then(host => determineToggleState(host)).then(toggles => {
-    Object.entries(toggles).forEach(([toggleId, toggled]) => {
-      $(`#${toggleId}`).prop('checked', toggled);
-    });
-  }).then(() => {
-    // set a listener for toggling recording for a site
-    $('#toggle-csp-record').change(event => {
-      getCurrentTabHost().then(host => {
-        toggleRecord('hosts', host, event.target.checked);
-        insertRecordingCount();
-        window.Lab.writeLocalState().then(() => insertCsp());
-      });
-    });
-
-    // there's no listener for enforcement, it simply changes how it's implemented
-    $('#toggle-csp-enforcement').change(event => {
-      getCurrentTabHost().then(host => {
-        toggleRecord('enforcedHosts', host, event.target.checked);
-        window.Lab.writeLocalState().then();
-      });
-    });
-  });
-
-  // display the current CSP if we have one
-  insertCsp();
-
-  // insert the config pulldowns
-  insertCspConfig();
-
-  // initialize all our clipboards
-  const clipboard = new Clipboard('.btn');
-
-  // bind a listener for the trash icon to delete all records
-  document.getElementById('btn-trash').addEventListener('click', () => {
-    window.Lab.clearState();
-
-    window.Lab.writeLocalState().then(() => {
-      $('.csp-toggle').prop('checked', false);  // unset all CSP checkboxes
-      window.Lab.init();
-      insertRecordingCount();
-      insertCsp();
-      insertCspConfig();
-    });
-  });
-
-
-  // bind a listener for every time we change a config setting, TODO: make this more generic
-  document.getElementById('csp-config').addEventListener('change', () => {
-    writeConfig().then(() => {
-      window.Lab.writeLocalState().then(() => insertCsp());
-    });
-  });
+  handleDOMContentLoaded();
 });
