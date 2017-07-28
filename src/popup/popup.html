@@ -55,7 +55,7 @@
             </div>
 
             <!-- each CSP directive, probably should make this cleaner -->
-            <div class="col-xs-12 csp-config-row">
+            <div id="csp-config-row-connect-src" class="col-xs-12 csp-config-row hidden">
               <div class="col-xs-2 csp-config-label">connect-src</div>
               <div class="col-xs-9 col-xs-offset-1">
                 <select id="csp-config-connect-src" class="csp-form-control form-control" data-directive="connect-src">
@@ -67,7 +67,7 @@
                 </select>
               </div>
             </div>
-            <div class="col-xs-12 csp-config-row">
+            <div id="csp-config-row-font-src" class="col-xs-12 csp-config-row hidden">
               <div class="col-xs-2 csp-config-label">font-src</div>
               <div class="col-xs-9 col-xs-offset-1">
                 <select id="csp-config-font-src" class="csp-form-control form-control" data-directive="font-src">
@@ -79,7 +79,7 @@
                 </select>
               </div>
             </div>
-            <div class="col-xs-12 csp-config-row">
+            <div id="csp-config-row-frame-src" class="col-xs-12 csp-config-row hidden">
               <div class="col-xs-2 csp-config-label">frame-src</div>
               <div class="col-xs-9 col-xs-offset-1">
                 <select id="csp-config-frame-src" class="csp-form-control form-control" data-directive="frame-src">
@@ -91,7 +91,7 @@
                 </select>
               </div>
             </div>
-            <div class="col-xs-12 csp-config-row">
+            <div id="csp-config-row-img-src" class="col-xs-12 csp-config-row hidden">
               <div class="col-xs-2 csp-config-label">img-src</div>
               <div class="col-xs-9 col-xs-offset-1">
                 <select id="csp-config-img-src" class="csp-form-control form-control" data-directive="img-src">
@@ -103,7 +103,7 @@
                 </select>
               </div> 
             </div>
-            <div class="col-xs-12 csp-config-row">
+            <div id="csp-config-row-media-src" class="col-xs-12 csp-config-row hidden">
               <div class="col-xs-2 csp-config-label">media-src</div>
               <div class="col-xs-9 col-xs-offset-1">
                 <select id="csp-config-media-src" class="csp-form-control form-control" data-directive="media-src">
@@ -115,7 +115,7 @@
                 </select>
               </div>
             </div>
-            <div class="col-xs-12 csp-config-row">
+            <div id="csp-config-row-object-src" class="col-xs-12 csp-config-row hidden">
               <div class="col-xs-2 csp-config-label">object-src</div>
               <div class="col-xs-9 col-xs-offset-1">
                 <select id="csp-config-object-src" class="csp-form-control form-control" data-directive="object-src">
@@ -127,7 +127,7 @@
                 </select>
               </div>
             </div>
-            <div class="col-xs-12 csp-config-row">
+            <div id="csp-config-row-script-src" class="col-xs-12 csp-config-row hidden">
               <div class="col-xs-2 csp-config-label">script-src</div>
               <div class="col-xs-9 col-xs-offset-1">
                 <select id="csp-config-script-src" class="csp-form-control form-control" data-directive="script-src">
@@ -139,7 +139,7 @@
                 </select>
               </div>
             </div>
-            <div class="col-xs-12 csp-config-row">
+            <div id="csp-config-row-style-src" class="col-xs-12 csp-config-row hidden">
               <div class="col-xs-2 csp-config-label">style-src</div>
               <div class="col-xs-9 col-xs-offset-1">
                 <select id="csp-config-style-src" class="csp-form-control form-control" data-directive="style-src">

@@ -44,13 +44,15 @@ const insertCsp = host => {
     if (builtCSP.records['script-src'].includes('\'unsafe-inline\'') ||
         builtCSP.records['script-src'].includes('data:')) {
       // make the column look scary
-      document.getElementById('csp-col').classList.add('alert-danger');
-      document.getElementById('csp-row-unsafe-inline-warning').classList.remove('hidden');
+      $('#csp-col').addClass('alert-danger');
+      $('#csp-row-unsafe-inline-warning').removeClass('hidden');
     } else {
-      document.getElementById('csp-col').classList.remove('alert-danger');
-      document.getElementById('csp-row-unsafe-inline-warning').classList.add('hidden');
+      $('#csp-col').removeClass('alert-danger');
+      $('#csp-row-unsafe-inline-warning').addClass('hidden');
     }
   }
+
+  return builtCSP.records;
 };
 
 
@@ -173,10 +175,24 @@ const handleDOMContentLoaded = (resetting = false) => {
     toggleToggler(host);
 
     // display the current CSP if we have one
-    insertCsp(host);
+    const records = insertCsp(host);
 
     // insert the config pulldowns
     insertCspConfig();
+
+    // unhide configuration directions for CSP records that are actually there
+    let numRecords = 0;
+    Object.entries(records).forEach(([k, v]) => {
+      if (v.length > 0) {
+        $(`#csp-config-row-${k}`).removeClass('hidden');
+        numRecords += v.length;
+      }
+    });
+
+    // if we actually have no records yet, hide the entire configuration section
+    if (numRecords === 0) {
+      $('#csp-config').addClass('hidden');
+    }
 
     // initialize all our clipboards
     const clipboard = new Clipboard('.btn');
