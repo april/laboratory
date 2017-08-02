@@ -3,9 +3,10 @@ class Lab {
     this.defaultState = () => {
       return {
         config: {
-          customCspHosts: {}, // list of hosts where CSP is manually overridden
-          enforcedHosts: [],  // list of hosts we are enforcing the generate CSP policy on
-          recordingHosts: [], // list of hosts to record
+          customcspHosts: [],   // list of hosts where CSP is manually overridden
+          customcspRecords: {}, // mapping of hosts to custom CSP records
+          enforcedHosts: [],    // list of hosts we are enforcing the generate CSP policy on
+          recordingHosts: [],   // list of hosts to record
           strictness: {
             'connect-src': 'self-if-same-origin-else-path',
             'font-src': 'origin',
@@ -82,7 +83,7 @@ class Lab {
   // get the list of all monitored sites in one way or another
   getActiveHosts() {
     const hosts = new Set([].concat(
-          Object.keys(this.state.config.customCspHosts),
+          this.state.config.customcspHosts,
           this.state.config.enforcedHosts,
           this.state.config.recordingHosts,
     ));
@@ -199,11 +200,12 @@ class Lab {
       // get the hostname of the subresource via its tabId
       browser.tabs.get(details.tabId).then(t => {
         const host = Lab.extractHostname(t.url);
-        const hosts = this.getActiveHosts();
         const records = this.state.records;
 
-        // if it isn't a monitored/enforced, or it's an incognito tab, let's just bail
-        if (!hosts.has(host) || t.incognito) {
+        // if we're enforcing/custom and/or incognito, don't record
+        if (this.state.config.customcspHosts.includes(host)
+          || this.state.config.enforcedHosts.includes(host)
+          || t.incognito) {
           return reject(false);
         }
 
@@ -377,9 +379,10 @@ class Lab {
       }
 
       // add the uri to the resources for that directive
-      // don't record if we're currently enforcing
-      if (!(records[host][directive].includes(uri))
-        && !(this.state.config.enforcedHosts.includes(host))) {
+      // don't record if we're currently enforcing or have a custom CSP
+      if (!records[host][directive].includes(uri)
+        && !this.state.config.customcspHosts.includes(host)
+        && !this.state.config.enforcedHosts.includes(host)) {
         records[host][directive].push(uri);
       }
 
@@ -411,8 +414,15 @@ class Lab {
       // get the request host name
       const host = Lab.extractHostname(request.url);
 
+      // use the manually set CSP policy
+      if (this.state.config.customcspHosts.includes(host)) {
+        request.responseHeaders.push({
+          name: 'Content-Security-Policy',
+          value: this.state.config.customcspRecords[host],
+        });
+      }
       // if we're in enforcement mode, we inject an actual CSP header
-      if (this.state.config.enforcedHosts.includes(host)) {
+      else if (this.state.config.enforcedHosts.includes(host)) {
         request.responseHeaders.push({
           name: 'Content-Security-Policy',
           value: this.buildCsp(host).text,

@@ -40,7 +40,7 @@ hr {
   padding-left: 19px;
 }
 
-#csp-col-header {
+.csp-col-header {
   margin-bottom: 10px;
 }
 
@@ -67,4 +67,14 @@ select.csp-form-control {
 
 #csp-recording-count-row {
   margin-top: 10px;
+}
+
+label.disabled {
+  color: rgb(153,153,153);
+}
+
+div.success {
+  background-color: #ebf5e1 !important;
+  border-color: #59822c !important;
+  color: #59822c;
 }

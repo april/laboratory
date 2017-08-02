@@ -9,18 +9,43 @@
   <body>
     <div class="panel">
       <div class="panel-heading">
-      <h6 class="panel-title">Content Security Policy</h6>
+        <h6 class="panel-title">Content Security Policy</h6>
       </div>
+
+      <div class="modal fade" id="csp-customcsp-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title">Custom CSP Policy</h4>
+            </div>
+            <div class="modal-body">
+              <input type="text" class="form-control" id="csp-customcsp-record">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-default" id="csp-customcsp-clear">Clear</button>
+              <button type="button" class="btn btn-primary" id="csp-customcsp-save" data-dismiss="modal"><span class="glyphicon glyphicon-save"></span> Save Policy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="panel-body">
         <div>
-          <label id="csp-toggle-recording-label" class="checkbox-inline" for="csp-toggle-recording">
-            <input class="csp-toggle" id="csp-toggle-recording" data-on="Yes" data-onstyle="success" data-off="No" data-offstyle="danger" data-toggle="toggle" data-size="mini" type="checkbox">
+          <label id="csp-toggle-recording-label" class="checkbox-inline csp-toggle-label" for="csp-toggle-recording">
+            <input class="csp-toggle" id="csp-toggle-recording" type="checkbox">
             Record this site (will disable existing CSP while recording)
           </label>
           <br>
-          <label class="checkbox-inline" for="csp-toggle-enforced">
-            <input class="csp-toggle" id="csp-toggle-enforced" data-on="Yes" data-onstyle="success" data-off="No" data-offstyle="danger" data-toggle="toggle" data-size="mini" type="checkbox">
+          <label id="csp-toggle-enforced-label" class="checkbox-inline csp-toggle-label" for="csp-toggle-enforced">
+            <input class="csp-toggle" id="csp-toggle-enforced" type="checkbox">
             Enforce CSP policy (pauses further recording)
+          </label>
+          <br>
+          <label id="csp-toggle-customcsp-label" class="checkbox-inline csp-toggle-label" for="csp-toggle-customcsp">
+            <input class="csp-toggle" id="csp-toggle-customcsp" type="checkbox">
+            Custom CSP policy
           </label>
         </div>
 
@@ -28,11 +53,17 @@
 
         <div class="container">
           <div class="row">
-            <div id="csp-col-header">Generated CSP configuration:</div>
+            <div class="csp-col-header csp-copy-item">Generated CSP configuration:</div>
+            <div class="csp-col-header csp-edit-item hidden">Custom CSP configuration:</div>
             <div id="csp-col" class="col-xs-10">
               <samp id="csp-record"></samp>
             </div>
-            <div class="col-xs-2">
+            <div class="col-xs-2 hidden csp-edit-item">
+              <button type="button" id="csp-btn-edit" class="btn btn-default btn-md pull-right">
+                <span class="glyphicon glyphicon-edit"></span> Edit
+              </button>
+            </div>
+            <div class="col-xs-2 csp-copy-item">
               <button type="button" id="csp-btn-copy" class="btn btn-default btn-md pull-right" data-clipboard-target="#csp-record">
                 <span class="glyphicon glyphicon-copy"></span> Copy
               </button>
