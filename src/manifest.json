@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Laboratory",
   "short_name": "Laboratory",
-  "version": "1.0.5",
+  "version": "2.0.0",
 
   "description": "Because good website security shouldn't only be available to mad scientists!",
   "homepage_url": "https://github.com/april/laboratory",
