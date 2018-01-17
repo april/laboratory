@@ -199,12 +199,20 @@ class Lab {
     return new Promise((resolve, reject) => {
       // get the hostname of the subresource via its tabId
       browser.tabs.get(details.tabId).then(t => {
-        const host = Lab.extractHostname(t.url);
-        const records = this.state.records;
+        let host;
+
+        // extract the upper level hostname
+        if (details.documentUrl !== undefined) {
+          host = Lab.extractHostname(details.documentUrl);
+        } else {
+          host = Lab.extractHostname(t.url);
+        }
 
         // if we're enforcing/custom and/or incognito, don't record
+        // also don't record if the TLD isn't in the recording list
         if (this.state.config.customcspHosts.includes(host)
           || this.state.config.enforcedHosts.includes(host)
+          || !this.state.config.recordingHosts.includes(host)
           || t.incognito) {
           return reject(false);
         }
@@ -231,6 +239,7 @@ class Lab {
         }
 
         // add the host to the records, if it's not already there
+        const records = this.state.records;
         if (!(host in records)) {
           records[host] = this.siteTemplate();
         }
