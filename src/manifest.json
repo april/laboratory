@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Laboratory",
   "short_name": "Laboratory",
-  "version": "2.1.0",
+  "version": "2.1.1",
 
   "description": "Because good website security shouldn't only be available to mad scientists!",
   "homepage_url": "https://github.com/april/laboratory",
@@ -40,6 +40,7 @@
     "webNavigation",
     "webRequest",
     "webRequestBlocking",
+    "ftp://*/*",
     "http://*/*",
     "https://*/*"
   ]
