@@ -3,9 +3,9 @@ Laboratory
 
 Laboratory is an experimental Firefox extension that helps you generate a proper Content Security Policy (CSP) header for your website.  Simply start recording, browse your site, and enjoy the CSP header that it produces:
 
-![Preview Image](https://i.imgur.com/dKnWrgK.png)
+![Preview Image](https://i.imgur.com/Ij1agqQ.png)
 
-It currently requires at least Firefox 53.  This means that it currently works with Firefox Developer Edition and Nightly, and should work with release once it reaches version 53.
+Laboratory requires Firefox 57 (Quantum) to function properly.
 
 ## Developing and Installing Locally
 
