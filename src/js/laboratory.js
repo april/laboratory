@@ -31,9 +31,7 @@ class Lab {
 
 
   static extractHostname(url) {
-    const a = document.createElement('a');
-    a.href = url;
-    return a.host;
+    return new URL(url).host;
   }
 
   static removeHttpHeaders(headers, headersToRemove) {
@@ -199,6 +197,7 @@ class Lab {
     return new Promise((resolve, reject) => {
       // get the hostname of the subresource via its tabId
       browser.tabs.get(details.tabId).then(t => {
+        const a = new URL(details.url);
         let host;
 
         // extract the upper level hostname
@@ -228,14 +227,10 @@ class Lab {
           return reject(false);
         }
 
-        // and store the url
-        const a = document.createElement('a');
-        a.href = details.url;
-
         // throw an error to the console if we see a request type that we don't know
         if (!(details.type in Lab.typeMapping)) {
           console.error('Error: Unknown request type encountered', details);
-          reject(false);
+          return reject(false);
         }
 
         // add the host to the records, if it's not already there
@@ -246,10 +241,10 @@ class Lab {
 
         // add the item to the records that we've seen
         records[host][this.typeMapping[details.type]].push(a.origin + a.pathname);
-        resolve(true);
+        return resolve(true);
       });
 
-      resolve(true);
+      return resolve(true);
     });
   }
 
@@ -369,6 +364,12 @@ class Lab {
       const directive = report['violated-directive'].split(' ')[0];
       const host = Lab.extractHostname(report['document-uri']);
       let uri = report['blocked-uri'];
+
+      // sometimes when things inject into the DOM, the blocked uri returns weird values
+      // lets simply return if that's the case
+      if (!uri) {
+        return reject(false);
+      }
 
       // catch the special cases (data, unsafe)
       switch (uri) {
