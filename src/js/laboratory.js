@@ -367,13 +367,14 @@ class Lab {
 
       // sometimes when things inject into the DOM, the blocked uri returns weird values
       // lets simply return if that's the case
-      if (!uri) {
+      if (!uri && uri !== '') {
         return reject(false);
       }
 
       // catch the special cases (data, unsafe)
       switch (uri) {
         case 'self':
+        case '':
           uri = '\'unsafe-inline\'';  // boo
           break;
         case 'data':
