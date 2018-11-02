@@ -1,12 +1,15 @@
-const getCurrentTabHost = () => {
-  return new Promise((resolve, reject) => {
-    browser.tabs.query({
-      active: true,
-      currentWindow: true,
-    }).then(tab => resolve(Lab.extractHostname(tab[0].url)))
-      .catch(err => reject(err));
-  });
-};
+import $ from 'jquery';
+import 'bootstrap';
+import ClipboardJS from 'clipboard';
+
+import { getCurrentTabHostname } from '../background_scripts/utils';
+
+/* bind to our backend window object */
+browser.runtime.getBackgroundPage().then(winder => {
+  console.log('hey, we got winder here', winder);
+  window.Lab = winder.Lab;
+  console.log('wndow is now', winder.Lab);
+});
 
 
 const getCustomCsp = host => {
@@ -121,6 +124,8 @@ const toggleToggler = (host) => {
     recording: window.Lab.state.config.recordingHosts.includes(host),
   };
 
+  console.log('inside toggle toggler with', host, window.Lab.state);
+
   // set all the toggler states
   Object.entries(states).forEach(([toggleId, toggled]) => {
     $(`#csp-toggle-${toggleId}`).prop('checked', toggled);
@@ -153,135 +158,135 @@ const toggleToggler = (host) => {
 };
 
 
-const toggleEvent = e => {
-  getCurrentTabHost().then(host => {
-    // get the toggle name
-    const toggleId = e.target.id.split('-').pop();
+const toggleEvent = async (e) => {
+  console.log('we got a toggle event');
+  const host = await getCurrentTabHostname();
+  console.log('we got the hostname of', host);
 
-    // toggle the correct record, based on its id
-    toggleRecord(`${toggleId}Hosts`, host, e.target.checked);
+  // get the toggle name
+  const toggleId = e.target.id.split('-').pop();
 
-    // update the number of sites we're recording
-    insertRecordingCount();
+  // toggle the correct record, based on its id
+  toggleRecord(`${toggleId}Hosts`, host, e.target.checked);
 
-    // if we're triggering the custom CSP, pop up the modal if needed
-    if (toggleId === 'customcsp' && e.target.checked) {
-      $('#csp-customcsp-modal').modal();
-    }
+  // update the number of sites we're recording
+  insertRecordingCount();
 
-    // set the toggle dependencies
-    toggleToggler(host);
+  // if we're triggering the custom CSP, pop up the modal if needed
+  if (toggleId === 'customcsp' && e.target.checked) {
+    $('#csp-customcsp-modal').modal();
+  }
 
-    // flush the changes to disk and then insert the current CSP
-    window.Lab.writeLocalState().then(() => insertCsp(host));
-  });
+  // set the toggle dependencies
+  toggleToggler(host);
+
+  // flush the changes to disk and then insert the current CSP
+  window.Lab.writeLocalState().then(() => insertCsp(host));
 };
 
 
-/* bind to our backend window object */
-browser.runtime.getBackgroundPage().then(winder => {
-  window.Lab = winder.Lab;
-});
+const handleDOMContentLoaded = async (reload = false) => {
+  console.log('inside dom content loader');
 
+  const host = await getCurrentTabHostname();
 
-const handleDOMContentLoaded = (reload = false) => {
-  getCurrentTabHost().then(host => {
-    // set the correct number of recorded hosts
-    insertRecordingCount();
+  console.log('inside dom content loader with tab host', host);
 
-    if (!reload) {  // we only want to do this when not recursing
-      /* BEGIN MODAL CODE */
+  // set the correct number of recorded hosts
+  insertRecordingCount();
 
-      // the custom CSP edit button
-      $('#csp-btn-edit').on('click', () => { $('#csp-customcsp-modal').modal(); });
+  if (!reload) {  // we only want to do this when not recursing
+    /* BEGIN MODAL CODE */
 
-      // automatically focus on input in modal and set the input value
-      $('#csp-customcsp-modal').on('shown.bs.modal', () => {
-        const v = window.Lab.state.config.customcspRecords[host] || 'default-src \'none\'';
-        $('#csp-customcsp-record').val(v).select();
-      });
+    // the custom CSP edit button
+    $('#csp-btn-edit').on('click', () => { $('#csp-customcsp-modal').modal(); });
 
-      // save the value of the custom CSP when we close the modal and refresh
-      // the dom content
-      const save = () => {
-        const v = $('#csp-customcsp-record').val().trim();
+    // automatically focus on input in modal and set the input value
+    $('#csp-customcsp-modal').on('shown.bs.modal', () => {
+      const v = window.Lab.state.config.customcspRecords[host] || 'default-src \'none\'';
+      $('#csp-customcsp-record').val(v).select();
+    });
 
-        // if it's blank, remove it from the list of custom CSP hosts
-        if (v === '') {
-          window.Lab.state.config.customcspHosts.splice(
-            window.Lab.state.config.customcspHosts.indexOf(host), 1);
-          delete window.Lab.state.config.customcspRecords[host];
-        } else {
-          window.Lab.state.config.customcspRecords[host] = v;
-        }
+    // save the value of the custom CSP when we close the modal and refresh
+    // the dom content
+    const save = () => {
+      const v = $('#csp-customcsp-record').val().trim();
 
-        handleDOMContentLoaded(true);
-      };
+      // if it's blank, remove it from the list of custom CSP hosts
+      if (v === '') {
+        window.Lab.state.config.customcspHosts.splice(
+          window.Lab.state.config.customcspHosts.indexOf(host), 1);
+        delete window.Lab.state.config.customcspRecords[host];
+      } else {
+        window.Lab.state.config.customcspRecords[host] = v;
+      }
 
-      $('#csp-customcsp-save').on('click', save);
-      $('#csp-customcsp-modal').on('keyup', e => {
-        if (e.keyCode === 13) {
-          save();
-          $('#csp-customcsp-modal').modal('hide');
-        }
-      });
+      handleDOMContentLoaded(true);
+    };
 
-      $('#csp-customcsp-clear').on('click', () => {
-        $('#csp-customcsp-record').val('').select();
-      });
-
-      /* END MODAL CODE */
-
-      // set events on all the togglers
-      $('.csp-toggle').on('click', toggleEvent);
-
-      // bind a listener for the trash icon to delete all records
-      $('#btn-trash').on('click', () => {
-        window.Lab.clearState();
-
-        window.Lab.writeLocalState().then(() => handleDOMContentLoaded(true));
-      });
-
-      // bind a listener for every time we change a config setting
-      // TODO: make this more generic
-      $('#csp-config').on('change', () => {
-        writeStrictnessToState();
-        Promise.all([window.Lab.writeLocalState(), getCurrentTabHost()]).then(args => {
-          insertCsp(args[1]);
-        });
-      });
-    }
-
-    // retrieve a site's active status and check the box if its active
-    toggleToggler(host);
-
-    // display the current CSP if we have one
-    const records = insertCsp(host);
-
-    // insert the config pulldowns
-    insertCspConfig();
-
-    // unhide configuration directions for CSP records that are actually there
-    let numRecords = 0;
-    Object.entries(records).forEach(([k, v]) => {
-      if (v.length > 0) {
-        $(`#csp-config-row-${k}`).removeClass('hidden');
-        numRecords += v.length;
+    $('#csp-customcsp-save').on('click', save);
+    $('#csp-customcsp-modal').on('keyup', e => {
+      if (e.keyCode === 13) {
+        save();
+        $('#csp-customcsp-modal').modal('hide');
       }
     });
 
-    // if we actually have no records yet, hide the entire configuration section
-    if (numRecords === 0) {
-      $('#csp-config').addClass('hidden');
-    }
+    $('#csp-customcsp-clear').on('click', () => {
+      $('#csp-customcsp-record').val('').select();
+    });
 
-    // initialize all our clipboards
-    const clipboard = new Clipboard('.btn');
+    /* END MODAL CODE */
+
+    // set events on all the togglers
+    $('.csp-toggle').on('click', toggleEvent);
+
+    // bind a listener for the trash icon to delete all records
+    $('#btn-trash').on('click', () => {
+      window.Lab.clearState();
+
+      window.Lab.writeLocalState().then(() => handleDOMContentLoaded(true));
+    });
+
+    // bind a listener for every time we change a config setting
+    // TODO: make this more generic
+    $('#csp-config').on('change', () => {
+      writeStrictnessToState();
+      Promise.all([window.Lab.writeLocalState(), getCurrentTabHostname()]).then(args => {
+        insertCsp(args[1]);
+      });
+    });
+  }
+
+  // retrieve a site's active status and check the box if its active
+  toggleToggler(host);
+
+  // display the current CSP if we have one
+  const records = insertCsp(host);
+
+  // insert the config pulldowns
+  insertCspConfig();
+
+  // unhide configuration directions for CSP records that are actually there
+  let numRecords = 0;
+  Object.entries(records).forEach(([k, v]) => {
+    if (v.length > 0) {
+      $(`#csp-config-row-${k}`).removeClass('hidden');
+      numRecords += v.length;
+    }
   });
+
+  // if we actually have no records yet, hide the entire configuration section
+  if (numRecords === 0) {
+    $('#csp-config').addClass('hidden');
+  }
+
+  // initialize all our clipboards
+  new ClipboardJS('.btn');
 };
 
 
 // initialize the document
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   handleDOMContentLoaded();
 });

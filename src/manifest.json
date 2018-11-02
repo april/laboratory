@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Laboratory",
   "short_name": "Laboratory",
-  "version": "2.1.2",
+  "version": "2.2.0",
 
   "description": "Because good website security shouldn't only be available to mad scientists!",
   "homepage_url": "https://github.com/april/laboratory",
@@ -12,8 +12,8 @@
   },
 
   "icons": {
-    "48": "img/vial.svg",
-    "96": "img/vial.svg"
+    "48": "icons/vial.svg",
+    "96": "icons/vial.svg"
   },
 
   "applications": {
@@ -24,12 +24,12 @@
   },
 
   "background": {
-    "scripts": ["js/localforage-1.5.0.min.js", "js/laboratory.js"]
+    "scripts": ["background_scripts/laboratory.js"]
   },
 
   "browser_action": {
     "browser_style": false,
-    "default_icon": "img/vial.svg",
+    "default_icon": "icons/vial.svg",
     "default_title": "Laboratory by Mozilla",
     "default_popup": "popup/popup.html"
   },

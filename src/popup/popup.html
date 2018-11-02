@@ -2,22 +2,19 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="css/bootstrap-3.3.7.min.css">
-    <link rel="stylesheet" href="css/bootstrap-toggle.min.css">
-    <link rel="stylesheet" href="css/popup.css">
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <div class="panel">
-      <div class="panel-heading">
-        <h6 class="panel-title">Content Security Policy</h6>
-      </div>
+    <div class="card">
+      <h6 class="card-header">Content Security Policy</h6>
 
       <div class="modal fade" id="csp-customcsp-modal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
               <h4 class="modal-title">Custom CSP Policy</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
               <input type="text" class="form-control" id="csp-customcsp-record">
@@ -31,20 +28,22 @@
         </div>
       </div>
 
-      <div class="panel-body">
-        <div>
-          <label id="csp-toggle-recording-label" class="checkbox-inline csp-toggle-label" for="csp-toggle-recording">
-            <input class="csp-toggle" id="csp-toggle-recording" type="checkbox">
+      <div class="card-body">
+        <div class="form-check">
+          <label id="csp-toggle-recording-label" class="form-check-label csp-toggle-label" for="csp-toggle-recording">
+            <input class="form-check-input csp-toggle" id="csp-toggle-recording" type="checkbox">
             Record this site (will disable existing CSP while recording)
           </label>
-          <br>
-          <label id="csp-toggle-enforced-label" class="checkbox-inline csp-toggle-label" for="csp-toggle-enforced">
-            <input class="csp-toggle" id="csp-toggle-enforced" type="checkbox">
+        </div>
+        <div class="form-check">
+          <label id="csp-toggle-enforced-label" class="form-check-label csp-toggle-label" for="csp-toggle-enforced">
+            <input class="form-check-input csp-toggle" id="csp-toggle-enforced" type="checkbox">
             Enforce CSP policy (pauses further recording)
           </label>
-          <br>
-          <label id="csp-toggle-customcsp-label" class="checkbox-inline csp-toggle-label" for="csp-toggle-customcsp">
-            <input class="csp-toggle" id="csp-toggle-customcsp" type="checkbox">
+        </div>
+        <div class="form-check">
+          <label id="csp-toggle-customcsp-label" class="form-check-label csp-toggle-label" for="csp-toggle-customcsp">
+            <input class="form-check-input csp-toggle" id="csp-toggle-customcsp" type="checkbox">
             Custom CSP policy
           </label>
         </div>
@@ -55,20 +54,20 @@
           <div class="row">
             <div class="csp-col-header csp-copy-item">Generated CSP configuration:</div>
             <div class="csp-col-header csp-edit-item hidden">Custom CSP configuration:</div>
-            <div id="csp-col" class="col-xs-10">
+            <div id="csp-col" class="col-10">
               <samp id="csp-record"></samp>
             </div>
-            <div class="col-xs-2 hidden csp-edit-item">
+            <div class="col-2 hidden csp-edit-item">
               <button type="button" id="csp-btn-edit" class="btn btn-default btn-md pull-right">
-                <span class="glyphicon glyphicon-edit"></span> Edit
+                <img class="octicon" src="octicons/pencil.svg"> Edit
               </button>
             </div>
-            <div class="col-xs-2 csp-copy-item">
+            <div class="col-2 csp-copy-item">
               <button type="button" id="csp-btn-copy" class="btn btn-default btn-md pull-right" data-clipboard-target="#csp-record">
-                <span class="glyphicon glyphicon-copy"></span> Copy
+                <img class="octicon" src="octicons/clippy.svg"> Copy
               </button>
             </div>
-            <div id="csp-row-unsafe-inline-warning" class="col-xs-12 hidden">
+            <div id="csp-row-unsafe-inline-warning" class="col-12 hidden">
               <p>
                 <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
                 Generated CSP uses <code>'unsafe-inline'</code> or <code>data:</code> inside <code>script-src</code>.<br><span id="csp-row-unsafe-inline-warning-indent">Consider using <code>nonce-source</code> or <code>hash-source</code>.</span>
@@ -81,14 +80,14 @@
 
         <div class="container">
           <div class="row" id="csp-config">
-            <div class="col-xs-12">
+            <div>
             Configuration:
             </div>
 
             <!-- each CSP directive, probably should make this cleaner -->
-            <div id="csp-config-row-connect-src" class="col-xs-12 csp-config-row hidden">
-              <div class="col-xs-2 csp-config-label">connect-src</div>
-              <div class="col-xs-9 col-xs-offset-1">
+            <div id="csp-config-row-connect-src" class="col-12 csp-config-row row">
+              <div class="col-3 csp-config-label">connect-src</div>
+              <div class="col-9">
                 <select id="csp-config-connect-src" class="csp-form-control form-control" data-directive="connect-src">
                   <option value="directory">directory</option>
                   <option value="path">path</option>
@@ -98,9 +97,10 @@
                 </select>
               </div>
             </div>
-            <div id="csp-config-row-font-src" class="col-xs-12 csp-config-row hidden">
-              <div class="col-xs-2 csp-config-label">font-src</div>
-              <div class="col-xs-9 col-xs-offset-1">
+
+            <div id="csp-config-row-font-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">font-src</div>
+              <div class="col-9">
                 <select id="csp-config-font-src" class="csp-form-control form-control" data-directive="font-src">
                   <option value="directory">directory</option>
                   <option value="path">path</option>
@@ -110,9 +110,9 @@
                 </select>
               </div>
             </div>
-            <div id="csp-config-row-frame-src" class="col-xs-12 csp-config-row hidden">
-              <div class="col-xs-2 csp-config-label">frame-src</div>
-              <div class="col-xs-9 col-xs-offset-1">
+            <div id="csp-config-row-frame-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">frame-src</div>
+              <div class="col-9">
                 <select id="csp-config-frame-src" class="csp-form-control form-control" data-directive="frame-src">
                   <option value="directory">directory</option>
                   <option value="path">path</option>
@@ -122,9 +122,9 @@
                 </select>
               </div>
             </div>
-            <div id="csp-config-row-img-src" class="col-xs-12 csp-config-row hidden">
-              <div class="col-xs-2 csp-config-label">img-src</div>
-              <div class="col-xs-9 col-xs-offset-1">
+            <div id="csp-config-row-img-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">img-src</div>
+              <div class="col-9">
                 <select id="csp-config-img-src" class="csp-form-control form-control" data-directive="img-src">
                   <option value="directory">directory</option>
                   <option value="path">path</option>
@@ -134,9 +134,9 @@
                 </select>
               </div> 
             </div>
-            <div id="csp-config-row-media-src" class="col-xs-12 csp-config-row hidden">
-              <div class="col-xs-2 csp-config-label">media-src</div>
-              <div class="col-xs-9 col-xs-offset-1">
+            <div id="csp-config-row-media-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">media-src</div>
+              <div class="col-9">
                 <select id="csp-config-media-src" class="csp-form-control form-control" data-directive="media-src">
                   <option value="directory">directory</option>
                   <option value="path">path</option>
@@ -146,9 +146,9 @@
                 </select>
               </div>
             </div>
-            <div id="csp-config-row-object-src" class="col-xs-12 csp-config-row hidden">
-              <div class="col-xs-2 csp-config-label">object-src</div>
-              <div class="col-xs-9 col-xs-offset-1">
+            <div id="csp-config-row-object-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">object-src</div>
+              <div class="col-9">
                 <select id="csp-config-object-src" class="csp-form-control form-control" data-directive="object-src">
                   <option value="directory">directory</option>
                   <option value="path">path</option>
@@ -158,9 +158,9 @@
                 </select>
               </div>
             </div>
-            <div id="csp-config-row-script-src" class="col-xs-12 csp-config-row hidden">
-              <div class="col-xs-2 csp-config-label">script-src</div>
-              <div class="col-xs-9 col-xs-offset-1">
+            <div id="csp-config-row-script-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">script-src</div>
+              <div class="col-9">
                 <select id="csp-config-script-src" class="csp-form-control form-control" data-directive="script-src">
                   <option value="directory">directory</option>
                   <option value="path">path</option>
@@ -170,9 +170,9 @@
                 </select>
               </div>
             </div>
-            <div id="csp-config-row-style-src" class="col-xs-12 csp-config-row hidden">
-              <div class="col-xs-2 csp-config-label">style-src</div>
-              <div class="col-xs-9 col-xs-offset-1">
+            <div id="csp-config-row-style-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">style-src</div>
+              <div class="col-9">
                 <select id="csp-config-style-src" class="csp-form-control form-control" data-directive="style-src">
                   <option value="directory">directory</option>
                   <option value="path">path</option>
@@ -185,24 +185,19 @@
           </div>
         </div>
 
-        <div class="container">
-          <div class="row">
-            <div id="csp-recording-count-row" class="col-xs-6">
-              Currently recording <strong><span id="csp-recording-count">0</span></strong> site(s)
-            </div>
-            <div class="col-xs-6">
-              <button type="button" id="btn-trash" class="btn btn-default btn-md pull-right" aria-label="Delete All Records">
-                <span class="glyphicon glyphicon-trash"></span> Delete All Settings
-              </button>
-            </div>
+        <div class="row">
+          <div id="csp-recording-count-row" class="col-6">
+            Currently recording <strong><span id="csp-recording-count">0</span></strong> site(s)
+          </div>
+          <div class="col-6">
+            <button type="button" id="btn-trash" class="btn btn-default btn-md float-right" aria-label="Delete All Records">
+              <img class="octicon" src="octicons/trashcan.svg"> Delete All Settings
+            </button>
           </div>
         </div>
 
       </div>
     </div>
-    <script src="js/jquery-3.1.1.min.js"></script>
-    <script src="js/bootstrap-3.3.7.min.js"></script>
-    <script src="js/clipboard-1.6.0.min.js"></script>
-    <script src="js/laboratory-popup.js"></script>
+    <script src="popup.js"></script>
   </body>
 </html>

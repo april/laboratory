@@ -1,5 +1,15 @@
 body {
+  font-size: .85rem;
   width: 640px;
+}
+
+body > div.card {
+  border: unset;
+  border-radius: unset;
+}
+
+.hidden {
+  display: none;
 }
 
 hr {
@@ -51,7 +61,7 @@ hr {
 .csp-config-label {
   font-family: monospace;
   font-weight: bold;
-  margin-top: 4px;
+  line-height: 1.6rem;  /* what am I dooooooooing?! */
   white-space: nowrap;
 }
 
@@ -77,4 +87,23 @@ div.success {
   background-color: #ebf5e1 !important;
   border-color: #59822c !important;
   color: #59822c;
+}
+
+/* bootstrap overrides */
+.container {
+  max-width: unset;
+  padding-right: unset;
+}
+
+.form-control {
+  font-size: .85rem;
+  line-height: 1;
+}
+
+/* from octicons, with tweaks */
+.octicon {
+  display: inline-block;
+  height: 1.1rem;
+  margin-top: .05rem;
+  vertical-align: text-top;
 }

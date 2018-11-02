@@ -1,3 +1,6 @@
+import localForage from 'localforage';
+import { extractHostname } from './utils';
+
 class Lab {
   constructor() {
     this.defaultState = () => {
@@ -23,16 +26,11 @@ class Lab {
     };
 
     // hoist static functions or something
-    this.extractHostname = Lab.extractHostname;
     this.removeHttpHeaders = Lab.removeHttpHeaders;
     this.typeMapping = Lab.typeMapping;
     this.unmonitorableSites = Lab.unmonitorableSites;
   }
 
-
-  static extractHostname(url) {
-    return new URL(url).host;
-  }
 
   static removeHttpHeaders(headers, headersToRemove) {
     // lower case the headers to remove
@@ -155,7 +153,7 @@ class Lab {
         return resolve(this.state);
       }
 
-      localforage.getItem('state').then(state => {
+      localForage.getItem('state').then(state => {
         if (state === null) {
           return resolve(this.defaultState());
         }
@@ -189,7 +187,7 @@ class Lab {
 
 
   writeLocalState() {
-    return localforage.setItem('state', this.state);
+    return localForage.setItem('state', this.state);
   }
 
 
@@ -202,9 +200,9 @@ class Lab {
 
         // extract the upper level hostname
         if (details.documentUrl !== undefined) {
-          host = Lab.extractHostname(details.documentUrl);
+          host = extractHostname(details.documentUrl);
         } else {
-          host = Lab.extractHostname(t.url);
+          host = extractHostname(t.url);
         }
 
         // if we're enforcing/custom and/or incognito, don't record
@@ -362,7 +360,7 @@ class Lab {
       // parse the CSP report
       const report = JSON.parse(decoder.decode(request.requestBody.raw[0].bytes))['csp-report'];
       const directive = report['violated-directive'].split(' ')[0];
-      const host = Lab.extractHostname(report['document-uri']);
+      const host = extractHostname(report['document-uri']);
       let uri = report['blocked-uri'];
 
       // sometimes when things inject into the DOM, the blocked uri returns weird values
@@ -423,7 +421,7 @@ class Lab {
       }
 
       // get the request host name
-      const host = Lab.extractHostname(request.url);
+      const host = extractHostname(request.url);
 
       // use the manually set CSP policy
       if (this.state.config.customcspHosts.includes(host)) {
@@ -473,6 +471,6 @@ lab.getLocalState().then(state => lab.setState(state)).then(() => {
 
 
 /* Synchronize the local storage every time a page finishes loading */
-browser.webNavigation.onCompleted.addListener(() => {
-  lab.writeLocalState().then();
+browser.webNavigation.onCompleted.addListener(async () => {
+  await lab.writeLocalState();
 });
