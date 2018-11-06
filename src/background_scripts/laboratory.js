@@ -107,12 +107,14 @@ class Lab {
     // which has the side effect of making it much easier to remove the listener
     if (this.onHeadersReceivedListener === undefined) {
       this.onHeadersReceivedListener = request => this.injectCspHeader(request);
+      this.onBeforeRedirectListener = request => this.responseMonitor(request);
       this.onResponseStartedListener = request => this.responseMonitor(request);
     }
 
     // delete the old listeners, if we're listening
     if (browser.webRequest.onHeadersReceived.hasListener(this.onHeadersReceivedListener)) {
       browser.webRequest.onHeadersReceived.removeListener(this.onHeadersReceivedListener);
+      browser.webRequest.onBeforeRedirect.removeListener(this.onBeforeRedirectListener);
       browser.webRequest.onResponseStarted.removeListener(this.onResponseStartedListener);
     }
 
@@ -134,6 +136,10 @@ class Lab {
       ['blocking', 'responseHeaders']);
 
     // TODO: make this more efficient?  Perhaps only listen if a tab is in hosts?
+    browser.webRequest.onBeforeRedirect.addListener(
+      this.onBeforeRedirectListener,
+      { urls: ['http://*/*', 'https://*/*', 'ftp://*/*'] });
+
     browser.webRequest.onResponseStarted.addListener(
       this.onResponseStartedListener,
       { urls: ['http://*/*', 'https://*/*', 'ftp://*/*'] });
@@ -189,55 +195,54 @@ class Lab {
 
 
   async responseMonitor(details) {
+    // get information about the current tab
+    const tab = await browser.tabs.get(details.tabId);
+
     // get the hostname of the subresource via its tabId
-    browser.tabs.get(details.tabId).then(t => {
-      const a = new URL(details.url);
-      let host;
+    const a = new URL(details.url);
+    let host;
 
-      // extract the upper level hostname
-      if (details.documentUrl !== undefined) {
-        host = extractHostname(details.documentUrl);
-      } else {
-        host = extractHostname(t.url);
-      }
+    // extract the upper level hostname
+    if (details.documentUrl !== undefined) {
+      host = extractHostname(details.documentUrl);
+    } else {
+      host = extractHostname(tab.url);
+    }
 
-      // if we're enforcing/custom and/or incognito, don't record
-      // also don't record if the TLD isn't in the recording list
-      if (this.state.config.customcspHosts.includes(host)
-        || this.state.config.enforcedHosts.includes(host)
-        || !this.state.config.recordingHosts.includes(host)
-        || t.incognito) {
-        return false;
-      }
+    // if we're enforcing/custom and/or incognito, don't record
+    // also don't record if the TLD isn't in the recording list
+    if (this.state.config.customcspHosts.includes(host)
+      || this.state.config.enforcedHosts.includes(host)
+      || !this.state.config.recordingHosts.includes(host)
+      || tab.incognito) {
+      return false;
+    }
 
-      // ignore requests that are for things that CSP doesn't deal with  --> other: fetch?
-      if (['main_frame', 'beacon', 'csp_report', 'other'].includes(details.type)) {
-        return false;
-      }
+    // ignore requests that are for things that CSP doesn't deal with  --> other: fetch?
+    if (['main_frame', 'beacon', 'csp_report', 'other'].includes(details.type)) {
+      return false;
+    }
 
-      // for requests that have a frameId (eg iframes), we only want to record them if they're
-      // a sub_frame request; all of the frame's resources are sandboxed as far as CSP goes
-      if (details.frameId !== 0 && details.type !== 'sub_frame') {
-        return false;
-      }
+    // for requests that have a frameId (eg iframes), we only want to record them if they're
+    // a sub_frame request; all of the frame's resources are sandboxed as far as CSP goes
+    if (details.frameId !== 0 && details.type !== 'sub_frame') {
+      return false;
+    }
 
-      // throw an error to the console if we see a request type that we don't know
-      if (!(details.type in Lab.typeMapping)) {
-        console.error('Error: Unknown request type encountered', details);
-        return false;
-      }
+    // throw an error to the console if we see a request type that we don't know
+    if (!(details.type in Lab.typeMapping)) {
+      console.error('Error: Unknown request type encountered', details);
+      return false;
+    }
 
-      // add the host to the records, if it's not already there
-      const records = this.state.records;
-      if (!(host in records)) {
-        records[host] = this.siteTemplate();
-      }
+    // add the host to the records, if it's not already there
+    const records = this.state.records;
+    if (!(host in records)) {
+      records[host] = this.siteTemplate();
+    }
 
-      // add the item to the records that we've seen
-      records[host][this.typeMapping[details.type]].push(a.origin + a.pathname);
-      return true;
-    });
-
+    // add the item to the records that we've seen
+    records[host][this.typeMapping[details.type]].push(a.origin + a.pathname);
     return true;
   }
 
