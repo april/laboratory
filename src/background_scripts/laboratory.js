@@ -146,38 +146,35 @@ class Lab {
   }
 
 
-  getLocalState() {
-    return new Promise((resolve, reject) => {
-      // if state already exists, we can just return that
-      if (this.state !== undefined) {
-        return resolve(this.state);
+  async getLocalState() {
+    // if state already exists, we can just return that
+    if (this.state !== undefined) {
+      return this.state;
+    }
+
+    let state = await localForage.getItem('state');
+    if (state === null) {
+      return this.defaultState();
+    }
+
+    // let's loop through state and make sure everything is there
+    Object.entries(this.defaultState()).forEach(([key, value]) => {
+      if (!(key in state)) {
+        state[key] = value;
       }
 
-      localForage.getItem('state').then(state => {
-        if (state === null) {
-          return resolve(this.defaultState());
-        }
-
-        // let's loop through state and make sure everything is there
-        Object.entries(this.defaultState()).forEach(([key, value]) => {
-          if (!(key in state)) {
-            state[key] = value;
-          }
-
-          // and loop through subkeys as well -- maybe this could use recursion
-          // eventually; or we could just not nest any deeper than this
-          if (typeof value === 'object') {
-            Object.entries(value).forEach(([subkey, subvalue]) => {
-              if (!(subkey in state[key])) {
-                state[key][subkey] = subvalue;
-              }
-            });
+      // and loop through subkeys as well -- maybe this could use recursion
+      // eventually; or we could just not nest any deeper than this
+      if (typeof value === 'object') {
+        Object.entries(value).forEach(([subkey, subvalue]) => {
+          if (!(subkey in state[key])) {
+            state[key][subkey] = subvalue;
           }
         });
-
-        return resolve(state);
-      });
+      }
     });
+
+    return state;
   }
 
 
@@ -191,59 +188,57 @@ class Lab {
   }
 
 
-  responseMonitor(details) {
-    return new Promise((resolve, reject) => {
-      // get the hostname of the subresource via its tabId
-      browser.tabs.get(details.tabId).then(t => {
-        const a = new URL(details.url);
-        let host;
+  async responseMonitor(details) {
+    // get the hostname of the subresource via its tabId
+    browser.tabs.get(details.tabId).then(t => {
+      const a = new URL(details.url);
+      let host;
 
-        // extract the upper level hostname
-        if (details.documentUrl !== undefined) {
-          host = extractHostname(details.documentUrl);
-        } else {
-          host = extractHostname(t.url);
-        }
+      // extract the upper level hostname
+      if (details.documentUrl !== undefined) {
+        host = extractHostname(details.documentUrl);
+      } else {
+        host = extractHostname(t.url);
+      }
 
-        // if we're enforcing/custom and/or incognito, don't record
-        // also don't record if the TLD isn't in the recording list
-        if (this.state.config.customcspHosts.includes(host)
-          || this.state.config.enforcedHosts.includes(host)
-          || !this.state.config.recordingHosts.includes(host)
-          || t.incognito) {
-          return reject(false);
-        }
+      // if we're enforcing/custom and/or incognito, don't record
+      // also don't record if the TLD isn't in the recording list
+      if (this.state.config.customcspHosts.includes(host)
+        || this.state.config.enforcedHosts.includes(host)
+        || !this.state.config.recordingHosts.includes(host)
+        || t.incognito) {
+        return false;
+      }
 
-        // ignore requests that are for things that CSP doesn't deal with  --> other: fetch?
-        if (['main_frame', 'beacon', 'csp_report', 'other'].includes(details.type)) {
-          return reject(false);
-        }
+      // ignore requests that are for things that CSP doesn't deal with  --> other: fetch?
+      if (['main_frame', 'beacon', 'csp_report', 'other'].includes(details.type)) {
+        return false;
+      }
 
-        // for requests that have a frameId (eg iframes), we only want to record them if they're
-        // a sub_frame request; all of the frame's resources are sandboxed as far as CSP goes
-        if (details.frameId !== 0 && details.type !== 'sub_frame') {
-          return reject(false);
-        }
+      // for requests that have a frameId (eg iframes), we only want to record them if they're
+      // a sub_frame request; all of the frame's resources are sandboxed as far as CSP goes
+      if (details.frameId !== 0 && details.type !== 'sub_frame') {
+        return false;
+      }
 
-        // throw an error to the console if we see a request type that we don't know
-        if (!(details.type in Lab.typeMapping)) {
-          console.error('Error: Unknown request type encountered', details);
-          return reject(false);
-        }
+      // throw an error to the console if we see a request type that we don't know
+      if (!(details.type in Lab.typeMapping)) {
+        console.error('Error: Unknown request type encountered', details);
+        return false;
+      }
 
-        // add the host to the records, if it's not already there
-        const records = this.state.records;
-        if (!(host in records)) {
-          records[host] = this.siteTemplate();
-        }
+      // add the host to the records, if it's not already there
+      const records = this.state.records;
+      if (!(host in records)) {
+        records[host] = this.siteTemplate();
+      }
 
-        // add the item to the records that we've seen
-        records[host][this.typeMapping[details.type]].push(a.origin + a.pathname);
-        return resolve(true);
-      });
-
-      return resolve(true);
+      // add the item to the records that we've seen
+      records[host][this.typeMapping[details.type]].push(a.origin + a.pathname);
+      return true;
     });
+
+    return true;
   }
 
   buildCsp(host) {
@@ -351,103 +346,99 @@ class Lab {
   }
 
 
-  ingestCspReport(request) {
-    return new Promise((resolve, reject) => {
-      const cancel = { cancel: true };
-      const decoder = new TextDecoder('utf8');
-      const records = this.state.records;
+  async ingestCspReport(request) {
+    const cancel = { cancel: true };
+    const decoder = new TextDecoder('utf8');
+    const records = this.state.records;
 
-      // parse the CSP report
-      const report = JSON.parse(decoder.decode(request.requestBody.raw[0].bytes))['csp-report'];
-      const directive = report['violated-directive'].split(' ')[0];
-      const host = extractHostname(report['document-uri']);
-      let uri = report['blocked-uri'];
+    // parse the CSP report
+    const report = JSON.parse(decoder.decode(request.requestBody.raw[0].bytes))['csp-report'];
+    const directive = report['violated-directive'].split(' ')[0];
+    const host = extractHostname(report['document-uri']);
+    let uri = report['blocked-uri'];
 
-      // sometimes when things inject into the DOM, the blocked uri returns weird values
-      // lets simply return if that's the case
-      if (!uri && uri !== '') {
-        return reject(false);
-      }
+    // sometimes when things inject into the DOM, the blocked uri returns weird values
+    // lets simply return if that's the case
+    if (!uri && uri !== '') {
+      return false;
+    }
 
-      // catch the special cases (data, unsafe)
-      switch (uri) {
-        case 'self':
-        case 'inline':
-        case '':
-          uri = '\'unsafe-inline\'';  // boo
-          break;
-        case 'data':
-          uri = 'data:';
-          break;
-        default:
-          break;
-      }
+    // catch the special cases (data, unsafe)
+    switch (uri) {
+      case 'self':
+      case 'inline':
+      case '':
+        uri = '\'unsafe-inline\'';  // boo
+        break;
+      case 'data':
+        uri = 'data:';
+        break;
+      default:
+        break;
+    }
 
-      // add the host to the records, if it's not already there
-      if (!(host in records)) {
-        records[host] = this.siteTemplate();
-      }
+    // add the host to the records, if it's not already there
+    if (!(host in records)) {
+      records[host] = this.siteTemplate();
+    }
 
-      // add the uri to the resources for that directive
-      // don't record if we're currently enforcing or have a custom CSP
-      if (!records[host][directive].includes(uri)
-        && !this.state.config.customcspHosts.includes(host)
-        && !this.state.config.enforcedHosts.includes(host)) {
-        records[host][directive].push(uri);
-      }
+    // add the uri to the resources for that directive
+    // don't record if we're currently enforcing or have a custom CSP
+    if (!records[host][directive].includes(uri)
+      && !this.state.config.customcspHosts.includes(host)
+      && !this.state.config.enforcedHosts.includes(host)) {
+      records[host][directive].push(uri);
+    }
 
-      return resolve(cancel);
-    });
+    return cancel;
   }
 
 
-  injectCspHeader(request) {
-    return new Promise((resolve, reject) => {
-      // Remove any existing CSP directives
-      Lab.removeHttpHeaders(request.responseHeaders, ['content-security-policy', 'content-security-policy-report-only']);
+  async injectCspHeader(request) {
+    // Remove any existing CSP directives
+    Lab.removeHttpHeaders(request.responseHeaders, ['content-security-policy', 'content-security-policy-report-only']);
 
-      // prevent CSP header caching due to the Firefox extension architecture
-      if (request.documentUrl === undefined) {
-        Lab.removeHttpHeaders(request.responseHeaders, ['cache-control', 'expires']);
+    // prevent CSP header caching due to the Firefox extension architecture
+    if (request.documentUrl === undefined) {
+      Lab.removeHttpHeaders(request.responseHeaders, ['cache-control', 'expires']);
 
-        request.responseHeaders.push({
-          name: 'Cache-Control',
-          value: 'no-cache, no-store, must-revalidate',
-        });
+      request.responseHeaders.push({
+        name: 'Cache-Control',
+        value: 'no-cache, no-store, must-revalidate',
+      });
 
-        request.responseHeaders.push({
-          name: 'Expires',
-          value: new Date().toUTCString(),
-        });
-      }
+      request.responseHeaders.push({
+        name: 'Expires',
+        value: new Date().toUTCString(),
+      });
+    }
 
-      // get the request host name
-      const host = extractHostname(request.url);
+    // get the request host name
+    const host = extractHostname(request.url);
 
-      // use the manually set CSP policy
-      if (this.state.config.customcspHosts.includes(host)) {
-        request.responseHeaders.push({
-          name: 'Content-Security-Policy',
-          value: this.state.config.customcspRecords[host],
-        });
-      }
-      // if we're in enforcement mode, we inject an actual CSP header
-      else if (this.state.config.enforcedHosts.includes(host)) {
-        request.responseHeaders.push({
-          name: 'Content-Security-Policy',
-          value: this.buildCsp(host).text,
-        });
-      } else {
-        // otherwise, we inject a fake report-only header
-        // this tells the browser to block all non-network requests in report only mode
-        request.responseHeaders.push({
-          name: 'Content-Security-Policy-Report-Only',
-          value: 'default-src \'none\'; connect-src http: https: ftp:; font-src http: https: ftp:; frame-src http: https: ftp:; img-src http: https: ftp:; media-src http: https: ftp:; object-src http: https: ftp:; script-src http: https: ftp:; style-src http: https: ftp:; report-uri /laboratory-fake-csp-report',
-        });
-      }
+    // use the manually set CSP policy
+    if (this.state.config.customcspHosts.includes(host)) {
+      request.responseHeaders.push({
+        name: 'Content-Security-Policy',
+        value: this.state.config.customcspRecords[host],
+      });
+    }
+    // if we're in enforcement mode, we inject an actual CSP header
+    else if (this.state.config.enforcedHosts.includes(host)) {
+      request.responseHeaders.push({
+        name: 'Content-Security-Policy',
+        value: this.buildCsp(host).text,
+      });
+    } else {
+      // otherwise, we inject a fake report-only header
+      // this tells the browser to block all non-network requests in report only mode
+      request.responseHeaders.push({
+        name: 'Content-Security-Policy-Report-Only',
+        value: 'default-src \'none\'; connect-src http: https: ftp:; font-src http: https: ftp:; frame-src http: https: ftp:; img-src http: https: ftp:; media-src http: https: ftp:; object-src http: https: ftp:; script-src http: https: ftp:; style-src http: https: ftp:; report-uri /laboratory-fake-csp-report',
+      });
+    }
 
-      return resolve({ responseHeaders: request.responseHeaders });
-    });
+    return { responseHeaders: request.responseHeaders };
   }
 }
 
