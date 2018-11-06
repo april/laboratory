@@ -99,6 +99,9 @@ div.success {
   font-size: .85rem;
   line-height: 1;
 }
+.form-check-input {
+  margin-top: .25rem;
+}
 
 /* from octicons, with tweaks */
 .octicon {
