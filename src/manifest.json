@@ -42,6 +42,7 @@
     "webRequestBlocking",
     "ftp://*/*",
     "http://*/*",
-    "https://*/*"
+    "https://*/*",
+    "wss://*/*"
   ]
 }
