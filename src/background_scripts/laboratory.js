@@ -372,6 +372,7 @@ class Lab {
       // catch the special cases (data, unsafe)
       switch (uri) {
         case 'self':
+        case 'inline':
         case '':
           uri = '\'unsafe-inline\'';  // boo
           break;
