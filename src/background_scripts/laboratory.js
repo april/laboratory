@@ -51,19 +51,27 @@ class Lab {
 
   static get typeMapping() {
     return {
+      audio: 'media-src',
+      embed: 'object-src',
       font: 'font-src',
       image: 'img-src',
       imageset: 'img-src',
+      manifest: 'manifest-src',
       media: 'media-src',
       object: 'object-src',
       other: 'connect-src',  // fetch?
       script: 'script-src',
+      serviceworker: 'worker-src',
+      sharedworker: 'worker-src',
       stylesheet: 'style-src',
       sub_frame: 'frame-src',
+      track: 'media-src',
+      video: 'media-src',
       websocket: 'connect-src',
+      worker: 'worker-src',
       xbl: 'style-src',
       xmlhttprequest: 'connect-src',
-      xslt: 'style-src',
+      xslt: 'script-src',
     };
   }
 
