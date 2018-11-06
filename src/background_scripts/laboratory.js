@@ -128,6 +128,7 @@ class Lab {
     for (const host of hosts) {
       urls.push(`http://${host}/*`);
       urls.push(`https://${host}/*`);
+      urls.push(`ws://${host}/*`);
       urls.push(`wss://${host}/*`);
     }
 
@@ -139,11 +140,11 @@ class Lab {
     // TODO: make this more efficient?  Perhaps only listen if a tab is in hosts?
     browser.webRequest.onBeforeRedirect.addListener(
       this.onBeforeRedirectListener,
-      { urls: ['http://*/*', 'https://*/*', 'wss://*/*', 'ftp://*/*'] });
+      { urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*', 'ftp://*/*'] });
 
     browser.webRequest.onResponseStarted.addListener(
       this.onResponseStartedListener,
-      { urls: ['http://*/*', 'https://*/*', 'wss://*/*', 'ftp://*/*'] });
+      { urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*', 'ftp://*/*'] });
   }
 
 
@@ -369,8 +370,6 @@ class Lab {
       return false;
     }
 
-    console.log('got a csp report', report);
-
     // catch the special cases (data, unsafe)
     switch (uri) {
       case 'self':
@@ -442,7 +441,7 @@ class Lab {
       // this tells the browser to block all non-network requests in report only mode
       request.responseHeaders.push({
         name: 'Content-Security-Policy-Report-Only',
-        value: 'default-src \'none\'; connect-src http: https: wss: ftp:; font-src http: https: wss: ftp:; frame-src http: https: wss: ftp:; img-src http: https: wss: ftp:; media-src http: https: wss: ftp:; object-src http: https: wss: ftp:; script-src http: https: wss: ftp:; style-src http: https: wss: ftp:; report-uri /laboratory-fake-csp-report',
+        value: 'default-src \'none\'; connect-src http: https: ws: wss: ftp:; font-src http: https: ws: wss: ftp:; frame-src http: https: ws: wss: ftp:; img-src http: https: ws: wss: ftp:; media-src http: https: ws: wss: ftp:; object-src http: https: ws: wss: ftp:; script-src http: https: ws: wss: ftp:; style-src http: https: ws: wss: ftp:; report-uri /laboratory-fake-csp-report',
       });
     }
 
