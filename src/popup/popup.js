@@ -6,9 +6,7 @@ import { getCurrentTabHostname } from '../background_scripts/utils';
 
 /* bind to our backend window object */
 browser.runtime.getBackgroundPage().then(winder => {
-  console.log('hey, we got winder here', winder);
   window.Lab = winder.Lab;
-  console.log('wndow is now', winder.Lab);
 });
 
 
@@ -124,8 +122,6 @@ const toggleToggler = (host) => {
     recording: window.Lab.state.config.recordingHosts.includes(host),
   };
 
-  console.log('inside toggle toggler with', host, window.Lab.state);
-
   // set all the toggler states
   Object.entries(states).forEach(([toggleId, toggled]) => {
     $(`#csp-toggle-${toggleId}`).prop('checked', toggled);
@@ -159,9 +155,7 @@ const toggleToggler = (host) => {
 
 
 const toggleEvent = async (e) => {
-  console.log('we got a toggle event');
   const host = await getCurrentTabHostname();
-  console.log('we got the hostname of', host);
 
   // get the toggle name
   const toggleId = e.target.id.split('-').pop();
@@ -186,11 +180,7 @@ const toggleEvent = async (e) => {
 
 
 const handleDOMContentLoaded = async (reload = false) => {
-  console.log('inside dom content loader');
-
   const host = await getCurrentTabHostname();
-
-  console.log('inside dom content loader with tab host', host);
 
   // set the correct number of recorded hosts
   insertRecordingCount();
