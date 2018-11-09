@@ -1,89 +1,9 @@
 import localForage from 'localforage';
+import { defaultState, unmonitorableSites } from './static';
 import { extractHostname } from './utils';
+import * as webRequest from './webrequest';
 
 class Lab {
-  constructor() {
-    this.defaultState = () => {
-      return {
-        config: {
-          customcspHosts: [],   // list of hosts where CSP is manually overridden
-          customcspRecords: {}, // mapping of hosts to custom CSP records
-          enforcedHosts: [],    // list of hosts we are enforcing the generate CSP policy on
-          recordingHosts: [],   // list of hosts to record
-          strictness: {
-            'connect-src': 'self-if-same-origin-else-path',
-            'font-src': 'origin',
-            'frame-src': 'origin',
-            'img-src': 'origin',
-            'media-src': 'origin',
-            'object-src': 'path',
-            'script-src': 'self-if-same-origin-else-path',
-            'style-src': 'self-if-same-origin-else-directory',
-          },
-        },
-        records: {},  // hosts -> sources mapping
-      };
-    };
-
-    // hoist static functions or something
-    this.removeHttpHeaders = Lab.removeHttpHeaders;
-    this.typeMapping = Lab.typeMapping;
-    this.unmonitorableSites = Lab.unmonitorableSites;
-  }
-
-
-  static removeHttpHeaders(headers, headersToRemove) {
-    // lower case the headers to remove
-    const headersToRemoveL = headersToRemove.map(h => h.toLowerCase());
-
-    // remove a list of response headers from a request object
-    let i = headers.length;
-    while (i > 0) {
-      i -= 1;
-      if (headersToRemoveL.includes(headers[i].name.toLowerCase())) {
-        headers.splice(i, 1);
-      }
-    }
-
-    return headers;
-  }
-
-
-  static get typeMapping() {
-    return {
-      audio: 'media-src',
-      embed: 'object-src',
-      font: 'font-src',
-      image: 'img-src',
-      imageset: 'img-src',
-      manifest: 'manifest-src',
-      media: 'media-src',
-      object: 'object-src',
-      other: 'connect-src',  // fetch?
-      script: 'script-src',
-      serviceworker: 'worker-src',
-      sharedworker: 'worker-src',
-      stylesheet: 'style-src',
-      sub_frame: 'frame-src',
-      track: 'media-src',
-      video: 'media-src',
-      websocket: 'connect-src',
-      worker: 'worker-src',
-      xbl: 'style-src',
-      xmlhttprequest: 'connect-src',
-      xslt: 'script-src',
-    };
-  }
-
-
-  static get unmonitorableSites() {
-    return [
-      'addons.mozilla.org',
-      'discovery.addons.mozilla.org',
-      'testpilot.firefox.com',
-    ];
-  }
-
   // get the list of all monitored sites in one way or another
   getActiveHosts() {
     const hosts = new Set([].concat(
@@ -98,7 +18,7 @@ class Lab {
 
   siteTemplate() {
     const site = {};
-    Object.keys(this.defaultState().config.strictness).map(x => {
+    Object.keys(defaultState().config.strictness).map(x => {
       site[x] = [];  // TODO: convert to Set once localforage supports it
       return undefined;
     });
@@ -115,15 +35,11 @@ class Lab {
     // which has the side effect of making it much easier to remove the listener
     if (this.onHeadersReceivedListener === undefined) {
       this.onHeadersReceivedListener = request => this.injectCspHeader(request);
-      this.onBeforeRedirectListener = request => this.responseMonitor(request);
-      this.onResponseStartedListener = request => this.responseMonitor(request);
     }
 
     // delete the old listeners, if we're listening
     if (browser.webRequest.onHeadersReceived.hasListener(this.onHeadersReceivedListener)) {
       browser.webRequest.onHeadersReceived.removeListener(this.onHeadersReceivedListener);
-      browser.webRequest.onBeforeRedirect.removeListener(this.onBeforeRedirectListener);
-      browser.webRequest.onResponseStarted.removeListener(this.onResponseStartedListener);
     }
 
     // we don't need to add any listeners if we're not yet monitoring any hosts
@@ -136,6 +52,7 @@ class Lab {
     for (const host of hosts) {
       urls.push(`http://${host}/*`);
       urls.push(`https://${host}/*`);
+      urls.push(`ftp://${host}/*`);
       urls.push(`ws://${host}/*`);
       urls.push(`wss://${host}/*`);
     }
@@ -143,22 +60,14 @@ class Lab {
     browser.webRequest.onHeadersReceived.addListener(
       this.onHeadersReceivedListener,
       { urls },
-      ['blocking', 'responseHeaders']);
-
-    // TODO: make this more efficient?  Perhaps only listen if a tab is in hosts?
-    browser.webRequest.onBeforeRedirect.addListener(
-      this.onBeforeRedirectListener,
-      { urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*', 'ftp://*/*'] });
-
-    browser.webRequest.onResponseStarted.addListener(
-      this.onResponseStartedListener,
-      { urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*', 'ftp://*/*'] });
+      ['blocking', 'responseHeaders']
+    );
   }
 
 
   clearState() {
     console.log('Laboratory: Clearing all local storage');
-    this.state = this.defaultState();
+    this.state = defaultState();
   }
 
 
@@ -170,11 +79,11 @@ class Lab {
 
     let state = await localForage.getItem('state');
     if (state === null) {
-      return this.defaultState();
+      return defaultState();
     }
 
     // let's loop through state and make sure everything is there
-    Object.entries(this.defaultState()).forEach(([key, value]) => {
+    Object.entries(defaultState()).forEach(([key, value]) => {
       if (!(key in state)) {
         state[key] = value;
       }
@@ -204,61 +113,10 @@ class Lab {
   }
 
 
-  async responseMonitor(details) {
-    // get information about the current tab
-    const tab = await browser.tabs.get(details.tabId);
-
-    // get the hostname of the subresource via its tabId
-    const a = new URL(details.url);
-    let host;
-
-    // extract the upper level hostname
-    if (details.documentUrl !== undefined) {
-      host = extractHostname(details.documentUrl);
-    } else {
-      host = extractHostname(tab.url);
-    }
-
-    // if we're enforcing/custom and/or incognito, don't record
-    // also don't record if the TLD isn't in the recording list
-    if (this.state.config.customcspHosts.includes(host)
-      || this.state.config.enforcedHosts.includes(host)
-      || !this.state.config.recordingHosts.includes(host)
-      || tab.incognito) {
-      return false;
-    }
-
-    // ignore requests that are for things that CSP doesn't deal with  --> other: fetch?
-    if (['main_frame', 'beacon', 'csp_report', 'other'].includes(details.type)) {
-      return false;
-    }
-
-    // for requests that have a frameId (eg iframes), we only want to record them if they're
-    // a sub_frame request; all of the frame's resources are sandboxed as far as CSP goes
-    if (details.frameId !== 0 && details.type !== 'sub_frame') {
-      return false;
-    }
-
-    // throw an error to the console if we see a request type that we don't know
-    if (!(details.type in Lab.typeMapping)) {
-      console.error('Error: Unknown request type encountered', details);
-      return false;
-    }
-
-    // add the host to the records, if it's not already there
-    const records = this.state.records;
-    if (!(host in records)) {
-      records[host] = this.siteTemplate();
-    }
-
-    // add the item to the records that we've seen
-    records[host][this.typeMapping[details.type]].push(a.origin + a.pathname);
-    return true;
-  }
-
   buildCsp(host) {
     const a = document.createElement('a');
-    let csp = 'default-src \'none\';';
+    let cspHtml = '<strong>default-src</strong> \'none\';';
+    let cspText = 'default-src \'none\';';
     let directive;
     let path;
     let sources;
@@ -273,8 +131,9 @@ class Lab {
     const records = this.state.records;
 
     // a handful of sites are completely immune to extensions that do the sort of thing we're doing
-    if (this.unmonitorableSites.includes(host)) {
+    if (unmonitorableSites.includes(host)) {
       return {
+        html: '😭  Security controls prevent monitoring  😭',
         text: '😭  Security controls prevent monitoring  😭',
         records: shadowCSP,
       };
@@ -283,7 +142,8 @@ class Lab {
     // if it's a host we don't have records for, let's just return default-src 'none'
     if (!(host in records)) {
       return {
-        text: csp.slice(0, -1),
+        html: cspHtml.slice(0, -1),
+        text: cspText.slice(0, -1),
         records: shadowCSP,
       };
     }
@@ -348,14 +208,16 @@ class Lab {
       sources = shadowCSP[directive].sort();
 
       if (sources.length > 0) {
-        csp = `${csp} ${directive} ${sources.join(' ')};`;
+        cspHtml = `${cspHtml} <br />&nbsp;&nbsp;<strong>${directive}</strong> ${sources.join(' ')};`;
+        cspText = `${cspText} ${directive} ${sources.join(' ')};`;
       }
     });
 
     // return our resolved CSP without the trailing semicolon
     // also return the shadow CSP if needed
     return {
-      text: csp.slice(0, -1),
+      html: cspHtml.slice(0, -1),
+      text: cspText.slice(0, -1),
       records: shadowCSP,
     };
   }
@@ -385,6 +247,9 @@ class Lab {
       case '':
         uri = '\'unsafe-inline\'';  // boo
         break;
+      case 'eval':
+        uri = '\'unsafe-eval\'';
+        break;
       case 'data':
         uri = 'data:';
         break;
@@ -411,11 +276,11 @@ class Lab {
 
   async injectCspHeader(request) {
     // Remove any existing CSP directives
-    Lab.removeHttpHeaders(request.responseHeaders, ['content-security-policy', 'content-security-policy-report-only']);
+    webRequest.removeHeaders(request.responseHeaders, ['content-security-policy', 'content-security-policy-report-only']);
 
     // prevent CSP header caching due to the Firefox extension architecture
     if (request.documentUrl === undefined) {
-      Lab.removeHttpHeaders(request.responseHeaders, ['cache-control', 'expires']);
+      webRequest.removeHeaders(request.responseHeaders, ['cache-control', 'expires']);
 
       request.responseHeaders.push({
         name: 'Cache-Control',
@@ -449,7 +314,7 @@ class Lab {
       // this tells the browser to block all non-network requests in report only mode
       request.responseHeaders.push({
         name: 'Content-Security-Policy-Report-Only',
-        value: 'default-src \'none\'; connect-src http: https: ws: wss: ftp:; font-src http: https: ws: wss: ftp:; frame-src http: https: ws: wss: ftp:; img-src http: https: ws: wss: ftp:; media-src http: https: ws: wss: ftp:; object-src http: https: ws: wss: ftp:; script-src http: https: ws: wss: ftp:; style-src http: https: ws: wss: ftp:; report-uri /laboratory-fake-csp-report',
+        value: 'default-src \'none\'; form-action \'none\'; connect-src \'none\'; font-src \'none\'; frame-src \'none\'; img-src \'none\'; manifest-src \'none\'; media-src \'none\'; object-src \'none\'; prefetch-src \'none\'; script-src \'none\'; style-src \'none\'; worker-src \'none\'; report-uri /laboratory-fake-csp-report',
       });
     }
 

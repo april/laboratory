@@ -22,7 +22,7 @@
             <div class="modal-footer">
               <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
               <button type="button" class="btn btn-default" id="csp-customcsp-clear">Clear</button>
-              <button type="button" class="btn btn-primary" id="csp-customcsp-save" data-dismiss="modal"><span class="glyphicon glyphicon-save"></span> Save Policy</button>
+              <button type="button" class="btn btn-primary" id="csp-customcsp-save" data-dismiss="modal"><img class="octicon inverted" src="octicons/desktop-download.svg"> Save Policy</button>
             </div>
           </div>
         </div>
@@ -54,7 +54,7 @@
           <div class="row">
             <div class="csp-col-header csp-copy-item">Generated CSP configuration:</div>
             <div class="csp-col-header csp-edit-item hidden">Custom CSP configuration:</div>
-            <div id="csp-col" class="col-10">
+            <div id="csp-col" class="col-10" data-toggle="tooltip" data-placement="bottom" data-html="true">
               <samp id="csp-record"></samp>
             </div>
             <div class="col-2 hidden csp-edit-item">
@@ -63,15 +63,15 @@
               </button>
             </div>
             <div class="col-2 csp-copy-item">
-              <button type="button" id="csp-btn-copy" class="btn btn-default btn-md pull-right" data-clipboard-target="#csp-record">
+              <button type="button" id="csp-btn-copy" class="btn btn-default btn-md pull-right" data-clipboard-target="#csp-record" data-toggle="popover" data-placement="top" data-content="<strong>Copied!</strong>">
                 <img class="octicon" src="octicons/clippy.svg"> Copy
               </button>
             </div>
-            <div id="csp-row-unsafe-inline-warning" class="col-12 hidden">
-              <p>
-                <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-                Generated CSP uses <code>'unsafe-inline'</code> or <code>data:</code> inside <code>script-src</code>.<br><span id="csp-row-unsafe-inline-warning-indent">Consider using <code>nonce-source</code> or <code>hash-source</code>.</span>
-              </p>
+            <div id="csp-row-unsafe-inline-warning" class="hidden">
+              <img class="octicon" src="octicons/alert.svg">
+              <div>
+                Generated CSP uses <code>'unsafe-inline'</code>, <code>'unsafe-eval'</code> or <code>data:</code> inside <code>script-src</code>.<br><span id="csp-row-unsafe-inline-warning-indent">This limits its ability to protect against cross-site scripting attacks.</span>
+              </div>
             </div>
           </div>
         </div>
@@ -85,7 +85,7 @@
             </div>
 
             <!-- each CSP directive, probably should make this cleaner -->
-            <div id="csp-config-row-connect-src" class="col-12 csp-config-row row">
+            <div id="csp-config-row-connect-src" class="col-12 csp-config-row row hidden">
               <div class="col-3 csp-config-label">connect-src</div>
               <div class="col-9">
                 <select id="csp-config-connect-src" class="csp-form-control form-control" data-directive="connect-src">
@@ -97,7 +97,18 @@
                 </select>
               </div>
             </div>
-
+            <div id="csp-config-row-form-action" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">form-action</div>
+              <div class="col-9">
+                <select id="csp-config-form-action" class="csp-form-control form-control" data-directive="form-action">
+                  <option value="directory">directory</option>
+                  <option value="path">path</option>
+                  <option value="origin"><strong>'self'</strong> if same origin, otherwise origin</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
             <div id="csp-config-row-font-src" class="col-12 csp-config-row row hidden">
               <div class="col-3 csp-config-label">font-src</div>
               <div class="col-9">
@@ -134,6 +145,18 @@
                 </select>
               </div> 
             </div>
+            <div id="csp-config-row-manifest-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">manifest-src</div>
+              <div class="col-9">
+                <select id="csp-config-manifest-src" class="csp-form-control form-control" data-directive="manifest-src">
+                  <option value="directory">directory</option>
+                  <option value="path">path</option>
+                  <option value="origin"><strong>'self'</strong> if same origin, otherwise origin</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
             <div id="csp-config-row-media-src" class="col-12 csp-config-row row hidden">
               <div class="col-3 csp-config-label">media-src</div>
               <div class="col-9">
@@ -158,6 +181,18 @@
                 </select>
               </div>
             </div>
+            <div id="csp-config-row-prefetch-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">prefetch-src</div>
+              <div class="col-9">
+                <select id="csp-config-prefetch-src" class="csp-form-control form-control" data-directive="prefetch-src">
+                  <option value="directory">directory</option>
+                  <option value="path">path</option>
+                  <option value="origin"><strong>'self'</strong> if same origin, otherwise origin</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
             <div id="csp-config-row-script-src" class="col-12 csp-config-row row hidden">
               <div class="col-3 csp-config-label">script-src</div>
               <div class="col-9">
@@ -174,6 +209,18 @@
               <div class="col-3 csp-config-label">style-src</div>
               <div class="col-9">
                 <select id="csp-config-style-src" class="csp-form-control form-control" data-directive="style-src">
+                  <option value="directory">directory</option>
+                  <option value="path">path</option>
+                  <option value="origin"><strong>'self'</strong> if same origin, otherwise origin</option>
+                  <option value="self-if-same-origin-else-directory"><strong>'self'</strong> if same origin, otherwise directory</option>
+                  <option value="self-if-same-origin-else-path"><strong>'self'</strong> if same origin, otherwise path</option>
+                </select>
+              </div>
+            </div>
+            <div id="csp-config-row-worker-src" class="col-12 csp-config-row row hidden">
+              <div class="col-3 csp-config-label">worker-src</div>
+              <div class="col-9">
+                <select id="csp-config-worker-src" class="csp-form-control form-control" data-directive="worker-src">
                   <option value="directory">directory</option>
                   <option value="path">path</option>
                   <option value="origin"><strong>'self'</strong> if same origin, otherwise origin</option>

@@ -49,6 +49,7 @@ const insertCsp = host => {
   if (getCustomCsp(host).exists) {
     builtCSP = {
       records: {},
+      html: getCustomCsp(host).html || 'default-src \'none\'',
       text: getCustomCsp(host).text || 'default-src \'none\'',
     };
   } else {
@@ -56,11 +57,19 @@ const insertCsp = host => {
     builtCSP = Lab.buildCsp(host);
   }
 
-  document.getElementById('csp-record').textContent = builtCSP.text;
+  $('#csp-record').text(builtCSP.text);
+
+  // enable tooltips, if they are a reasonable length
+  if (builtCSP.text.length < 768) {
+    $('#csp-col').attr('data-original-title', builtCSP.html).tooltip();
+  } else {
+    $('#csp-col').attr('data-original-title', 'CSP policy is too long to display in this tooltip, sorry!<br><br>But hey, thanks for being <strong>awesome</strong> and trying out Laboratory!').tooltip();
+  }
 
   // TODO: make sure things are clear if you're using unsafe-inline
   if ('script-src' in builtCSP.records) {
     if (builtCSP.records['script-src'].includes('\'unsafe-inline\'') ||
+        builtCSP.records['script-src'].includes('\'unsafe-eval\'') ||
         builtCSP.records['script-src'].includes('data:')) {
       // make the column look scary
       $('#csp-col').addClass('alert-danger');
@@ -273,6 +282,15 @@ const handleDOMContentLoaded = async (reload = false) => {
 
   // initialize all our clipboards
   new ClipboardJS('.btn');
+
+  // initialize the copied button popover, and have it disappear after one second
+  $('#csp-btn-copy').popover({
+    html: true,
+  }).click(() => {
+    setTimeout(() => {
+      $('#csp-btn-copy').popover('hide');
+    }, 1000)
+  });
 };
 
 

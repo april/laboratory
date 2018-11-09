@@ -46,8 +46,17 @@ hr {
   padding-left: 5px;
 }
 
+#csp-row-unsafe-inline-warning img.octicon {
+  margin-right: 4px;
+  margin-top: -1.5em;
+}
+
+#csp-row-unsafe-inline-warning div {
+  display: inline-block;
+}
+
 #csp-row-unsafe-inline-warning-indent {
-  padding-left: 19px;
+  padding-left: 34px;
 }
 
 .csp-col-header {
@@ -103,10 +112,29 @@ div.success {
   margin-top: .25rem;
 }
 
+.tooltip-inner {
+  background-color: white;
+  border: solid 1px black;
+  color: black;
+  max-height: 45vh;
+  max-width: 620px;
+  overflow: hidden;
+  text-align: left;
+  word-break: break-all;
+}
+
+.tooltip.show {
+  opacity: 1;
+}
+
 /* from octicons, with tweaks */
 .octicon {
   display: inline-block;
   height: 1.1rem;
   margin-top: .05rem;
   vertical-align: text-top;
+}
+
+.inverted {
+  filter: invert(100%);
 }

@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Laboratory",
   "short_name": "Laboratory",
-  "version": "2.2.0",
+  "version": "3.0.0",
 
   "description": "Because good website security shouldn't only be available to mad scientists!",
   "homepage_url": "https://github.com/april/laboratory",
@@ -19,7 +19,7 @@
   "applications": {
     "gecko": {
       "id": "1b2383b324c8520974ee097e46301d5ca4e076de387c02886f1c6b1503671586@pokeinthe.io",
-      "strict_min_version": "57.0"
+      "strict_min_version": "63.0"
     }
   },
 
