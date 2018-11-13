@@ -22,7 +22,7 @@ hr {
 }
 
 #csp-col {
-  overflow: scroll;
+  overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: bottom;
   white-space: nowrap;
