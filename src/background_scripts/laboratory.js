@@ -253,6 +253,12 @@ class Lab {
       case 'data':
         uri = 'data:';
         break;
+      case 'ws':  // currently broken, see: https://bugzilla.mozilla.org/show_bug.cgi?id=1505178
+        uri = 'ws:';
+        break;
+      case 'wss': // also broken
+        uri = 'wss:';
+        break;
       default:
         break;
     }
