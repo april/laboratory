@@ -114,7 +114,7 @@ class Lab {
 
 
   buildCsp(host) {
-    const a = document.createElement('a');
+    let uri;
     let cspHtml = '<strong>default-src</strong> \'none\';';
     let cspText = 'default-src \'none\';';
     let directive;
@@ -155,43 +155,44 @@ class Lab {
       // now we need to iterate over each source and munge it
       sources.forEach(source => {
         let mungedSource;
-        a.href = source;
 
-        switch (strictness[directive]) {
-          case 'origin':
-            if (a.host === host) {
-              mungedSource = '\'self\'';
-            } else {
-              mungedSource = a.origin;
-            }
-            break;
-          case 'self-if-same-origin-else-directory':
-            if (a.host === host) {
-              mungedSource = '\'self\'';
-              break;
-            }
-            // falls through
-          case 'directory':
-            path = a.pathname.split('/');
-            path.pop();
-            mungedSource = `${a.origin}${path.join('/')}/`;
-            break;
-          case 'self-if-same-origin-else-path':
-            if (a.host === host) {
-              mungedSource = '\'self\'';
-              break;
-            }
-            // falls through
-          case 'path':
-            mungedSource = a.href;
-            break;
-          default:
-            break;
-        }
-
-        // if it's a special case, we don't do processing
-        if (['\'unsafe-eval\'', '\'unsafe-inline\'', 'data:'].includes(source)) {
+        // if it's a special case, we don't do processing - ws: and wss: are Firefox bugs
+        if (['\'unsafe-eval\'', '\'unsafe-inline\'', 'data:', 'ws:', 'wss:'].includes(source)) {
           mungedSource = source;
+        } else {
+          uri = new URL(source);
+
+          switch (strictness[directive]) {
+            case 'origin':
+              if (uri.host === host) {
+                mungedSource = '\'self\'';
+              } else {
+                mungedSource = uri.origin;
+              }
+              break;
+            case 'self-if-same-origin-else-directory':
+              if (uri.host === host) {
+                mungedSource = '\'self\'';
+                break;
+              }
+              // falls through
+            case 'directory':
+              path = uri.pathname.split('/');
+              path.pop();
+              mungedSource = `${uri.origin}${path.join('/')}/`;
+              break;
+            case 'self-if-same-origin-else-path':
+              if (uri.host === host) {
+                mungedSource = '\'self\'';
+                break;
+              }
+              // falls through
+            case 'path':
+              mungedSource = uri.href;
+              break;
+            default:
+              break;
+          }
         }
 
         // now we simply add the entry to the shadowCSP, if it's not already there
