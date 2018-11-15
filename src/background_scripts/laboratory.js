@@ -162,36 +162,46 @@ class Lab {
         } else {
           uri = new URL(source);
 
-          switch (strictness[directive]) {
-            case 'origin':
-              if (uri.host === host) {
-                mungedSource = '\'self\'';
-              } else {
-                mungedSource = uri.origin;
-              }
-              break;
-            case 'self-if-same-origin-else-directory':
-              if (uri.host === host) {
-                mungedSource = '\'self\'';
+          // the source is simply the origin if there is no path
+          if (uri.pathname === '/' && strictness[directive] !== 'scheme') {
+            mungedSource = uri.origin;
+          }
+          else {
+            switch (strictness[directive]) {
+              case 'scheme':
+                mungedSource = uri.protocol;
+                console.log('munged scheme source is', mungedSource);
                 break;
-              }
-              // falls through
-            case 'directory':
-              path = uri.pathname.split('/');
-              path.pop();
-              mungedSource = `${uri.origin}${path.join('/')}/`;
-              break;
-            case 'self-if-same-origin-else-path':
-              if (uri.host === host) {
-                mungedSource = '\'self\'';
+              case 'origin':
+                if (uri.host === host) {
+                  mungedSource = '\'self\'';
+                } else {
+                  mungedSource = uri.origin;
+                }
                 break;
-              }
-              // falls through
-            case 'path':
-              mungedSource = uri.href;
-              break;
-            default:
-              break;
+              case 'self-if-same-origin-else-directory':
+                if (uri.host === host) {
+                  mungedSource = '\'self\'';
+                  break;
+                }
+                // falls through
+              case 'directory':
+                path = uri.pathname.split('/');
+                path.pop();
+                mungedSource = `${uri.origin}${path.join('/')}/`;
+                break;
+              case 'self-if-same-origin-else-path':
+                if (uri.host === host) {
+                  mungedSource = '\'self\'';
+                  break;
+                }
+                // falls through
+              case 'path':
+                mungedSource = uri.href;
+                break;
+              default:
+                break;
+            }
           }
         }
 
