@@ -260,6 +260,8 @@ class Lab {
         uri = 'wss:';
         break;
       default:
+        uri = new URL(uri);
+        uri = uri.pathname === '/' ? uri.origin : uri.origin + uri.pathname;
         break;
     }
 
