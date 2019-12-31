@@ -1,6 +1,6 @@
 {
   "name": "Laboratory",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "description": "Because good website security shouldn't only be available to mad scientists!",
   "license": "MPL-2.0",
   "scripts": {
@@ -27,12 +27,12 @@
     "popper.js": "^1.14.7"
   },
   "devDependencies": {
-    "@babel/core": "^7.3.4",
-    "@babel/plugin-proposal-object-rest-spread": "^7.3.4",
-    "@babel/preset-env": "^7.3.4",
-    "babel-loader": "^8.0.5",
+    "@babel/core": "^7.7.7",
+    "@babel/plugin-proposal-object-rest-spread": "^7.7.7",
+    "@babel/preset-env": "^7.7.7",
+    "babel-loader": "^8.0.6",
     "copy-webpack-plugin": "^4.5.4",
-    "webpack": "^4.29.5",
-    "webpack-cli": "^3.2.3"
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
   }
 }
