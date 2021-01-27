@@ -1,6 +1,6 @@
 {
   "name": "Laboratory",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "description": "Because good website security shouldn't only be available to mad scientists!",
   "license": "MPL-2.0",
   "scripts": {
@@ -18,21 +18,21 @@
   },
   "homepage": "https://github.com/april/laboratory#readme",
   "dependencies": {
-    "bootstrap": "^4.3.1",
-    "clipboard": "^2.0.4",
-    "jquery": "^3.3.1",
-    "license-webpack-plugin": "^2.1.1",
-    "localforage": "^1.7.3",
+    "bootstrap": "^4.6.0",
+    "clipboard": "^2.0.6",
+    "jquery": "^3.5.1",
+    "license-webpack-plugin": "^2.3.11",
+    "localforage": "^1.9.0",
     "octicons": "^8.4.2",
-    "popper.js": "^1.14.7"
+    "popper.js": "^1.16.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.7.7",
-    "@babel/plugin-proposal-object-rest-spread": "^7.7.7",
-    "@babel/preset-env": "^7.7.7",
-    "babel-loader": "^8.0.6",
+    "@babel/core": "^7.12.10",
+    "@babel/plugin-proposal-object-rest-spread": "^7.12.1",
+    "@babel/preset-env": "^7.12.11",
+    "babel-loader": "^8.2.2",
     "copy-webpack-plugin": "^4.5.4",
-    "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10"
+    "webpack": "^4.46.0",
+    "webpack-cli": "^3.3.12"
   }
 }
