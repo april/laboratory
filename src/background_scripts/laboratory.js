@@ -168,9 +168,11 @@ class Lab {
           }
           else {
             switch (strictness[directive]) {
+              case 'none':
+                mungedSource = '\'none\'';
+                break;
               case 'scheme':
                 mungedSource = uri.protocol;
-                console.log('munged scheme source is', mungedSource);
                 break;
               case 'origin':
                 if (uri.host === host) {
