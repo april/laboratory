@@ -54,7 +54,7 @@ module.exports = {
         flatten: true
       },
       {
-        from: 'src/icons/*.svg',
+        from: 'src/icons/*.png',
         to: 'icons/',
         flatten: true
       },
