@@ -1,7 +1,7 @@
 Laboratory
 ==========
 
-Laboratory is an experimental Firefox extension that helps you generate a proper Content Security Policy (CSP) header for your website.  Simply start recording, browse your site, and enjoy the CSP header that it produces:
+Laboratory is a Firefox and Chrome WebExtension that helps you generate a proper Content Security Policy (CSP) header for your website.  Simply start recording, browse your site, and enjoy the CSP header that it produces:
 
 ![Preview Image](https://i.imgur.com/Ij1agqQ.png)
 
