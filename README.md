@@ -16,10 +16,10 @@ $ npm run watch
 ```
 
 ```bash
-$ npm run start'
+$ npm run start
 ```
 
-This will launch it in both Firefox and Chrome simultaneously. You can alternatively run `npm run start:firefox` or `npm run start:chromium` if you wish to launch it only in a single browser.
+This will launch it in both Firefox and Chrome simultaneously. You can run `npm run start:firefox` or `npm run start:chromium` if you wish to launch it only in a single browser.
 
 Lastly, for a "production" release, run:
 
