@@ -1,3 +1,4 @@
+import * as browser from 'webextension-polyfill';
 import localForage from 'localforage';
 import { defaultState, unmonitorableSites } from './static';
 import { extractHostname } from './utils';
@@ -235,15 +236,15 @@ class Lab {
     };
   }
 
-
-  async ingestCspReport(request) {
-    const cancel = { cancel: true };
+  ingestCspReport(request) {
     const decoder = new TextDecoder('utf8');
     const records = this.state.records;
 
     // parse the CSP report
     const report = JSON.parse(decoder.decode(request.requestBody.raw[0].bytes))['csp-report'];
-    const directive = report['violated-directive'].split(' ')[0];
+
+    // for now, we remove -attr and -elem, due to Firefox bug 1529338
+    const directive = report['violated-directive'].split(' ')[0].replace('-attr', '').replace('-elem', '');
     const host = extractHostname(report['document-uri']);
     let uri = report['blocked-uri'];
 
@@ -291,11 +292,11 @@ class Lab {
       records[host][directive].push(uri);
     }
 
-    return cancel;
+    return { cancel: true };
   }
 
 
-  async injectCspHeader(request) {
+  injectCspHeader(request) {
     // Remove any existing CSP directives
     webRequest.removeHeaders(request.responseHeaders, ['content-security-policy', 'content-security-policy-report-only']);
 

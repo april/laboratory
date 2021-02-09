@@ -1,3 +1,4 @@
+import * as browser from 'webextension-polyfill';
 import $ from 'jquery';
 import 'bootstrap';
 import ClipboardJS from 'clipboard';

@@ -1,3 +1,5 @@
+import * as browser from 'webextension-polyfill';
+
 export const extractHostname = (url) => {
   return new URL(url).host;
 }

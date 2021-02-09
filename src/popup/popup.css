@@ -1,5 +1,5 @@
 body {
-  font-size: .85rem;
+  font-size: 14px;
   width: 640px;
 }
 
@@ -45,6 +45,7 @@ hr {
 #csp-col.alert-danger {
   background-color: #eed3d7;
   border-color: #b94a48;
+  font-size: 13px;
 }
 
 #csp-row-unsafe-inline-warning {
